@@ -57,3 +57,20 @@ test('current CF compiler label matches legacy challenge without accepting other
  assert.equal(matchesChallenge({...c,language:s.programmingLanguage},s),true);
  for (const programmingLanguage of ['GNU C++20','C++17 (GCC 9-64)']) assert.equal(matchesChallenge(c,{...s,programmingLanguage}),false);
 });
+
+test('language isolation: exact labels work and unrelated languages never satisfy C++17', () => {
+ const { sameLanguage } = require('../dist/services/cf-binding');
+ const labels = ['C++17 (GCC 7-32)', 'GNU C++17', 'GNU C++17 (64)',
+  'C++17 (GCC 9-64)', 'GNU C++14', 'GNU C++20 (64)', 'C++20 (GCC 13-64)',
+  'C++23 (GCC 14-64, msys2)', 'Clang++17 Diagnostics', 'GNU C11',
+  'Python 3', 'Python 3.8.10', 'PyPy 3', 'PyPy 3-64', 'Java 21', 'Java 8',
+  'Kotlin 1.9', 'Rust 2021', 'Go', 'C# 10', 'Mono C#', 'JavaScript',
+  'Node.js', 'Free Pascal', 'FPC', 'D', 'Ruby 3', 'Haskell', 'Scala', 'PHP', 'Perl'];
+ for (const expected of labels) {
+  for (const actual of labels) {
+   const equivalent = expected === actual ||
+    (['GNU C++17','C++17 (GCC 7-32)'].includes(expected) && ['GNU C++17','C++17 (GCC 7-32)'].includes(actual));
+   assert.equal(sameLanguage(expected,actual),equivalent,`${expected} vs ${actual}`);
+  }
+ }
+});
