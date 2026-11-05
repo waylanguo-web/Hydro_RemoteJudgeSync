@@ -49,3 +49,11 @@ test('nonexistent account, duplicate ownership, and API failures never bind', as
  g.api.submissions = async () => { throw Error('network'); };
  await assert.rejects(g.svc.check(7), /network/); assert.equal(g.binding(),undefined);
 });
+
+test('current CF compiler label matches legacy challenge without accepting other compilers', () => {
+ const c = { handleKey:'warmingcium',problem:{contestId:1078,index:'E'},language:'GNU C++17',startedAt:1793921974,expiresAt:1793922574 };
+ const s = { id:397527041,creationTimeSeconds:1793922081,problem:c.problem,author:{members:[{handle:'warmingcium'}]},programmingLanguage:'C++17 (GCC 7-32)',verdict:'COMPILATION_ERROR' };
+ assert.equal(matchesChallenge(c,s),true);
+ assert.equal(matchesChallenge({...c,language:s.programmingLanguage},s),true);
+ for (const programmingLanguage of ['GNU C++20','C++17 (GCC 9-64)']) assert.equal(matchesChallenge(c,{...s,programmingLanguage}),false);
+});

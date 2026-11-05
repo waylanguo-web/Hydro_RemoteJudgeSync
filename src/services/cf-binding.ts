@@ -3,10 +3,14 @@ export interface Challenge {
     _id: string; uid: number; handle: string; handleKey: string;
     problem: CFProblem; language: string; startedAt: number; expiresAt: number;
 }
+export function sameLanguage(expected: string, actual: string): boolean {
+    const aliases = new Set(['GNU C++17', 'C++17 (GCC 7-32)']);
+    return expected === actual || (aliases.has(expected) && aliases.has(actual));
+}
 export function matchesChallenge(c: Challenge, s: CFSubmission): boolean {
     return s.creationTimeSeconds >= c.startedAt && s.creationTimeSeconds <= c.expiresAt
         && s.problem.contestId === c.problem.contestId && s.problem.index === c.problem.index
-        && s.programmingLanguage === c.language && s.verdict === 'COMPILATION_ERROR'
+        && sameLanguage(c.language, s.programmingLanguage) && s.verdict === 'COMPILATION_ERROR'
         && s.author.members.length === 1
         && s.author.members[0].handle.toLowerCase() === c.handleKey;
 }
@@ -33,7 +37,7 @@ export class CFBindingService {
         if (!problems.length) throw new Error('暂无可用验证题。');
         const startedAt = this.now() + 1;
         const c: Challenge = { _id: crypto.randomUUID(), uid, handle, handleKey,
-            problem: problems[this.random(problems.length)], language: 'GNU C++17',
+            problem: problems[this.random(problems.length)], language: 'C++17 (GCC 7-32)',
             startedAt, expiresAt: startedAt + 600 };
         await this.store.saveChallenge(c);
         return c;
