@@ -74,3 +74,12 @@ test('language isolation: exact labels work and unrelated languages never satisf
   }
  }
 });
+
+test('new challenges require exactly Kotlin 2.2.0', async () => {
+ const f = fixture(); const c = await f.svc.start(7,'tourist');
+ assert.equal(c.language,'Kotlin 2.2.0');
+ for (const programmingLanguage of ['Kotlin 1.9','Kotlin 2.1.0','GNU C++17','C++17 (GCC 7-32)']) {
+  assert.equal(matchesChallenge(c,submission(c,{programmingLanguage})),false);
+ }
+ f.rows([submission(c)]); await f.svc.check(7); assert.ok(f.binding());
+});

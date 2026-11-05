@@ -12,7 +12,7 @@
 {% if challenge %}
 <p>验证账号：<strong>{{ challenge.handle }}</strong></p>
 <p>请在挑战开始后的 10 分钟内，向 <a target="_blank" rel="noopener noreferrer" href="https://codeforces.com/contest/{{ challenge.problem.contestId }}/problem/{{ challenge.problem.index }}">CF {{ challenge.problem.contestId }}{{ challenge.problem.index }}</a> 提交一次编译错误（CE）。</p>
-<p>指定语言：<strong>{{ challenge.language }}</strong>（请选择完全相同的语言，不能选 C++20 等其他版本）。可提交 <code>#error RMJ_BINDING</code> 触发 CE。</p>
+<p>指定语言：<strong>{{ challenge.language }}</strong>（请选择完全相同的语言，不能选其他语言或版本）。可提交 {% if challenge.language == "Kotlin 2.2.0" %}<code>fun main() { val rmj: Int = "RMJ_BINDING" }</code>{% else %}<code>#error RMJ_BINDING</code>{% endif %} 触发 CE。</p>
 <p>截止时间（Unix 秒）：{{ challenge.expiresAt }}。过期后请重新开始。重新开始会替换旧挑战。</p>
 <form method="post"><input type="hidden" name="csrf" value="{{ rmjCsrf }}"><button class="button rounded primary" name="action" value="check">检测并绑定</button></form>
 {% endif %}{% endif %}

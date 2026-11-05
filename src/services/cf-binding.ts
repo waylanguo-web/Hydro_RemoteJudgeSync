@@ -37,7 +37,7 @@ export class CFBindingService {
         if (!problems.length) throw new Error('暂无可用验证题。');
         const startedAt = this.now() + 1;
         const c: Challenge = { _id: crypto.randomUUID(), uid, handle, handleKey,
-            problem: problems[this.random(problems.length)], language: 'C++17 (GCC 7-32)',
+            problem: problems[this.random(problems.length)], language: 'Kotlin 2.2.0',
             startedAt, expiresAt: startedAt + 600 };
         await this.store.saveChallenge(c);
         return c;

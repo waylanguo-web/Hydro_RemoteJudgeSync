@@ -55,7 +55,7 @@ hydrooj addon add /absolute/path/to/Hydro_RemoteJudgeSync
 
 然后按站点现有方式重启 Hydro，访问 `/home/settings/account`。插件依赖 Hydro 5 的默认 UI 模板；自定义主题需提供 `home_settings.html` 和 `layout/home_base.html`。当前以官方源码的 `HomeSettings` 响应钩子为目标，尚未在真实站点联调。
 
-绑定流程：输入 CF 用户名 → 官方 API 检查存在性 → 从通过人数不超过 1000 的非交互编程题中随机抽题 → 在 10 分钟内以 **C++17 (GCC 7-32)** 提交 `#error RMJ_BINDING` 获得 CE → 回到页面点击检测。重新开始会替换旧挑战，超时必须重新发起。时间以服务器为准，请保持服务器时钟准确。
+绑定流程：输入 CF 用户名 → 官方 API 检查存在性 → 从通过人数不超过 1000 的非交互编程题中随机抽题 → 在 10 分钟内以 **Kotlin 2.2.0** 提交 `fun main() { val rmj: Int = "RMJ_BINDING" }` 获得 CE → 回到页面点击检测。重新开始会替换旧挑战，超时必须重新发起。时间以服务器为准，请保持服务器时钟准确。
 
 账号显示来自插件独立 MongoDB 集合，不接受设置页直接编辑；全站同一 CF 账号仅允许绑定一名 Hydro 用户。数据库唯一索引处理并发重复绑定。绑定和解绑仅允许登录用户操作，POST 另校验会话 CSRF 令牌。账号接口有请求频率限制。
 
