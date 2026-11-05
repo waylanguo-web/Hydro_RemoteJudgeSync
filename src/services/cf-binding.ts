@@ -5,7 +5,9 @@ export interface Challenge {
 }
 export function sameLanguage(expected: string, actual: string): boolean {
     const aliases = new Set(['GNU C++17', 'C++17 (GCC 7-32)']);
-    return expected === actual || (aliases.has(expected) && aliases.has(actual));
+    const kotlin = new Set(['Kotlin 2.2.0', 'Kotlin 2.2']);
+    return expected === actual || (aliases.has(expected) && aliases.has(actual))
+        || (kotlin.has(expected) && kotlin.has(actual));
 }
 export function matchesChallenge(c: Challenge, s: CFSubmission): boolean {
     return s.creationTimeSeconds >= c.startedAt && s.creationTimeSeconds <= c.expiresAt

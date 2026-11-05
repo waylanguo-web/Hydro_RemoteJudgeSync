@@ -81,5 +81,5 @@ test('new challenges require exactly Kotlin 2.2.0', async () => {
  for (const programmingLanguage of ['Kotlin 1.9','Kotlin 2.1.0','GNU C++17','C++17 (GCC 7-32)']) {
   assert.equal(matchesChallenge(c,submission(c,{programmingLanguage})),false);
  }
- f.rows([submission(c)]); await f.svc.check(7); assert.ok(f.binding());
+ f.rows([submission(c,{programmingLanguage:'Kotlin 2.2'})]); await f.svc.check(7); assert.ok(f.binding());
 });
