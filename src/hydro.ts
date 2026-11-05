@@ -1,3 +1,4 @@
+import { saveChallenge, getChallenge, consumeChallenge } from './challenge-store';
 import { CodeforcesApi } from './providers/codeforces';
 import { CFBindingService, type BindingStore, type Challenge } from './services/cf-binding';
 declare const require: (name: string) => any;
@@ -11,9 +12,9 @@ export async function install(ctx: any) {
     const store: BindingStore = {
         getBinding: uid => accounts.findOne({ _id: uid }),
         owner: handleKey => accounts.findOne({ handleKey }),
-        saveChallenge: async c => { await challenges.replaceOne({ uid: c.uid }, c, { upsert: true }); },
-        getChallenge: uid => challenges.findOne({ uid }),
-        consume: async c => (await challenges.deleteOne({ _id: c._id, uid: c.uid })).deletedCount === 1,
+        saveChallenge: c => saveChallenge(challenges, c),
+        getChallenge: uid => getChallenge(challenges, uid),
+        consume: c => consumeChallenge(challenges, c),
         bind: async (c, submissionId) => {
             try { await accounts.insertOne({ _id: c.uid, handle: c.handle, handleKey: c.handleKey, submissionId, verifiedAt: new Date() }); }
             catch (e: any) { if (e.code === 11000) throw new Error('用户或 CF 账号已绑定，请刷新页面。'); throw e; }
