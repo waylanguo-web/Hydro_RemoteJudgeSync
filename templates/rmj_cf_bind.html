@@ -1,0 +1,21 @@
+{% extends "layout/home_base.html" %}
+{% block home_content %}
+<div class="section"><div class="section__header"><h1 class="section__title">绑定 Codeforces 账号</h1></div><div class="section__body typo">
+{% if message %}<p role="status">{{ message }}</p>{% endif %}
+{% if account %}
+<p>已绑定：{{ account.handle }}。如需改绑，请先解绑。</p>
+<form method="post"><input type="hidden" name="csrf" value="{{ rmjCsrf }}"><button class="button" name="action" value="unlink">解绑</button></form>
+{% else %}
+<form method="post"><input type="hidden" name="csrf" value="{{ rmjCsrf }}">
+<label>CF 用户名 <input class="textbox" name="handle" required maxlength="24" autocomplete="off"></label>
+<button class="button rounded primary" name="action" value="start">检测用户名并开始绑定</button></form>
+{% if challenge %}
+<p>验证账号：<strong>{{ challenge.handle }}</strong></p>
+<p>请在挑战开始后的 10 分钟内，向 <a target="_blank" rel="noopener noreferrer" href="https://codeforces.com/contest/{{ challenge.problem.contestId }}/problem/{{ challenge.problem.index }}">CF {{ challenge.problem.contestId }}{{ challenge.problem.index }}</a> 提交一次编译错误（CE）。</p>
+<p>指定语言：<strong>{{ challenge.language }}</strong>（请选择完全相同的语言，不能选 C++20 等其他版本）。可提交 <code>#error RMJ_BINDING</code> 触发 CE。</p>
+<p>截止时间（Unix 秒）：{{ challenge.expiresAt }}。过期后请重新开始。重新开始会替换旧挑战。</p>
+<form method="post"><input type="hidden" name="csrf" value="{{ rmjCsrf }}"><button class="button rounded primary" name="action" value="check">检测并绑定</button></form>
+{% endif %}{% endif %}
+<p><a href="{{ url('home_settings', category='account') }}">返回账号设置</a></p>
+</div></div>
+{% endblock %}

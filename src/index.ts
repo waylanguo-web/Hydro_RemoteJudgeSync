@@ -1,8 +1,6 @@
-/** Hydro plugin entry. Routes and persistence will be added after host-version validation. */
+import { install } from './hydro';
 export const name = 'remote-judge-sync';
-export function apply(_context: unknown): void {
-    // Initialization scaffold: deliberately does not change native judging or grades.
-}
+export async function apply(context: unknown): Promise<void> { await install(context); }
 export * from './models/types';
 export * from './providers/base';
 export * from './services/status';

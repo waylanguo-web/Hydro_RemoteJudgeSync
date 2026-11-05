@@ -1,0 +1,11 @@
+{% extends "home_settings.html" %}
+{% block home_content %}
+{{ super() }}
+<div class="section"><div class="section__header"><h1 class="section__title">Codeforces 账号</h1></div>
+<div class="section__body">
+<label>CF 名 <input class="textbox" type="text" readonly value="{{ rmjAccount.handle if rmjAccount else '未绑定' }}" style="width:240px;display:inline-block"></label>
+<a class="button rounded primary" href="{{ url('rmj_cf_bind') }}">绑定</a>
+{% if rmjAccount %}<form method="post" action="{{ url('rmj_cf_bind') }}" style="display:inline">
+<input type="hidden" name="csrf" value="{{ rmjCsrf }}"><button class="button rounded" name="action" value="unlink">解绑</button></form>{% endif %}
+</div></div>
+{% endblock %}
