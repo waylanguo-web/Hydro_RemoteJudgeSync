@@ -8,4 +8,9 @@
 {% if rmjAccount %}<form method="post" action="{{ url('rmj_cf_bind') }}" style="display:inline">
 <input type="hidden" name="csrf" value="{{ rmjCsrf }}"><button class="button rounded" name="action" value="unlink">解绑</button></form>{% endif %}
 </div></div>
+<div class="section"><div class="section__header"><h1 class="section__title">AtCoder 账号</h1></div><div class="section__body">
+<label>AtCoder 名 <input class="textbox" type="text" readonly value="{{ rmjAtCoderAccount.handle if rmjAtCoderAccount else '未绑定' }}" style="width:240px;display:inline-block"></label>
+<a class="button rounded primary" href="{{ url('rmj_atcoder_bind') }}">绑定</a>
+{% if rmjAtCoderAccount %}<form method="post" action="{{ url('rmj_atcoder_bind') }}" style="display:inline"><input type="hidden" name="csrf" value="{{ rmjCsrf }}"><button class="button rounded" name="action" value="unlink">解绑</button></form>{% endif %}
+</div></div>
 {% endblock %}

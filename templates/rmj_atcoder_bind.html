@@ -1,0 +1,20 @@
+{% extends "layout/home_base.html" %}
+{% block home_content %}
+<div class="section"><div class="section__header"><h1 class="section__title">绑定 AtCoder 账号</h1></div><div class="section__body typo">
+{% if message %}<p role="status">{{ message }}</p>{% endif %}
+{% if account %}
+<p>已绑定：{{ account.handle }}。如需改绑，请先解绑。</p>
+<form method="post"><input type="hidden" name="csrf" value="{{ rmjCsrf }}"><button class="button" name="action" value="unlink">解绑</button></form>
+{% else %}
+<form method="post"><input type="hidden" name="csrf" value="{{ rmjCsrf }}"><label>AtCoder 用户名 <input class="textbox" name="handle" required maxlength="16" autocomplete="off"></label><button class="button primary" name="action" value="start">检测用户名并开始绑定</button></form>
+{% if challenge %}
+<p>验证账号：<strong>{{ challenge.handle }}</strong></p>
+<ol><li>先记下原来的所属内容，然后打开 <a href="https://atcoder.jp/settings" target="_blank" rel="noopener noreferrer">AtCoder 设置</a>。</li>
+<li>将 Affiliation（所属）字段完整替换为下面的验证码并保存：</li></ol>
+<pre>{{ challenge.token }}</pre>
+<p>请在 10 分钟内回来检测。截止时间（Unix 秒）：{{ challenge.expiresAt }}。重新开始会使旧验证码失效。绑定成功后可恢复原所属内容。</p>
+<form method="post"><input type="hidden" name="csrf" value="{{ rmjCsrf }}"><button class="button primary" name="action" value="check">检测并绑定</button></form>
+{% endif %}{% endif %}
+<p><a href="{{ url('home_settings', category='account') }}">返回账号设置</a></p>
+</div></div>
+{% endblock %}
