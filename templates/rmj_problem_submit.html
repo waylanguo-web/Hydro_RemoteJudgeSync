@@ -2,10 +2,7 @@
 <div class="row"><div class="columns"><div class="section"><div class="section__header"><h1 class="section__title">RMJ · 检测 {{ rmjPlatformName }} AC</h1></div><div class="section__body typo">
 <p>{{ pdoc.title }} · <a href="{{ rmjUrl }}" target="_blank" rel="noopener noreferrer">{{ rmjPlatformName }} 原题</a></p>
 {% if rmjAccount %}<p>当前绑定账号：<strong>{{ rmjAccount.handle }}</strong></p>{% if rmjPlatform == 'atcoder' %}<p>查询 AtCoder Problems 收录的历史 AC。第三方同步可能延迟，暂未找到 AC 时不会记录未通过，请稍后重试。</p>{% else %}<p>点击提交后查询完整历史记录。找到 AC 则记录为 Accepted（100 分），没有则记为未通过（0 分）。查询失败不会记为未通过。</p>{% endif %}
-{% if rmjNeedId %}<p>第三方 API 暂无该题 AC 记录。请填写你的 AtCoder 提交 ID 或提交详情链接，核对账号和题目后同步评测结果。</p>{% endif %}
-<form method="post"><input type="hidden" name="csrf" value="{{ rmjCsrf }}">
-{% if rmjPlatform == 'atcoder' %}<label>提交 ID 或官方提交链接（API 未收录时使用）<input class="textbox" name="submissionId" placeholder="例如 80566002 或 https://atcoder.jp/contests/…/submissions/…" {% if rmjNeedId %}required{% endif %}></label>{% endif %}
-<button class="button primary" type="submit">提交 · 同步 {{ rmjPlatformName }} 评测</button></form>
+<form method="post"><input type="hidden" name="csrf" value="{{ rmjCsrf }}"><button class="button primary" type="submit">提交 · 检测 {{ rmjPlatformName }} AC</button></form>
 {% else %}<p>请先验证绑定 {{ rmjPlatformName }} 账号。</p><a class="button primary" href="{{ url(rmjBindRoute) }}">绑定 {{ rmjPlatformName }}</a>{% endif %}
 <p><a href="{{ url('problem_detail', pid=pdoc.docId) }}">返回题目</a></p>
 </div></div></div></div>{% endblock %}
