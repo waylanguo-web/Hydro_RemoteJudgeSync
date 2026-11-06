@@ -13,17 +13,17 @@ addPage(new NamedPage('manage_config', () => {
     // ConfigEditor mounts asynchronously and owns the full-screen layout.
     // Attach to the actual password row, never to the legacy page sidebar.
     const mount = () => {
-        const app = document.body;
+        const app = document.getElementById('app');
         if (!app || section.isConnected) return;
-        const label = [...app.querySelectorAll('*')].reverse().find(el =>
-            el.textContent.trim() === 'rmj.atcoder.password');
+        const label = [...app.querySelectorAll('*')].find(el =>
+            el.children.length === 0 && el.textContent.trim() === 'rmj.atcoder.password');
         if (!label) return;
         let row = label.parentElement;
         while (row && row !== app && !row.querySelector('input')) row = row.parentElement;
-        if (row && row !== app) { section.style.gridColumn = '1 / -1'; row.append(section); }
+        if (row && row !== app) row.after(section);
     };
     const observer = new MutationObserver(mount);
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.getElementById('app') || document.body, { childList: true, subtree: true });
     mount();
     const button = section.querySelector('button'); const status = section.querySelector('[role="status"]');
     button.addEventListener('click', async () => {
