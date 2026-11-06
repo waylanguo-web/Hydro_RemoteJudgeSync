@@ -3,15 +3,28 @@ import { parseRemoteProblem } from '../shared/remote-problem.js';
 
 addPage(new NamedPage('manage_config', () => {
     const data = window.UiContext.rmjAtcoderConfigTest;
-    const sidebar = document.querySelector('.medium-3.columns [data-sticky]');
-    if (!data || !sidebar || document.getElementById('rmj-atcoder-config-test')) return;
+    if (!data) return;
     const section = document.createElement('div');
-    section.id = 'rmj-atcoder-config-test'; section.className = 'section side';
-    section.innerHTML = `<div class="section__header"><h1 class="section__title">RMJ · AtCoder</h1></div>
-<div class="section__body"><p>保存用户名和密码后，在此验证官方登录。</p>
-<button type="button" class="button rounded primary" style="width:100%">检测验证账号</button>
+    section.id = 'rmj-atcoder-config-test';
+    section.style.cssText = 'margin:16px 0;position:relative;';
+    section.innerHTML = `<div><p>请先保存账号配置，再检测登录。</p>
+<button type="button" class="button rounded primary">登录检测</button>
 <p role="status" style="display:none;margin-top:12px;word-break:break-word"></p></div>`;
-    sidebar.prepend(section);
+    // ConfigEditor mounts asynchronously and owns the full-screen layout.
+    // Attach to the actual password row, never to the legacy page sidebar.
+    const mount = () => {
+        const app = document.getElementById('app');
+        if (!app || section.isConnected) return;
+        const label = [...app.querySelectorAll('*')].find(el =>
+            el.children.length === 0 && el.textContent.trim() === 'rmj.atcoder.password');
+        if (!label) return;
+        let row = label.parentElement;
+        while (row && row !== app && !row.querySelector('input')) row = row.parentElement;
+        if (row && row !== app) row.after(section);
+    };
+    const observer = new MutationObserver(mount);
+    observer.observe(document.getElementById('app') || document.body, { childList: true, subtree: true });
+    mount();
     const button = section.querySelector('button'); const status = section.querySelector('[role="status"]');
     button.addEventListener('click', async () => {
         button.disabled = true; status.style.display = ''; status.textContent = '正在登录 AtCoder 检测……';
