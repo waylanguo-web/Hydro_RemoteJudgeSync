@@ -1,5 +1,15 @@
 # Hydro RemoteJudgeSync
 
+## VJudge RMJ
+
+账号设置支持通过 School 一次性验证码绑定 VJudge。评测设置选择 VJudge，输入
+`AtCoder-abc482_a`、`CodeForces-4A` 等完整题号或 `https://vjudge.net/problem/AtCoder-abc482_a`。
+点击递交后，读取绑定账号的 `/user/solveDetail/{username}` 公开通过列表，匹配 OJ 与题号。
+通过记为原生 AC、100 分；未通过记为 0 分。网络或数据异常不记成绩。
+`/status/data` 可用时补充 AC Run ID、提交时间、耗时和内存。通过列表不含具体提交时间，
+无法获取的审计字段保存为 null。接口参考 rahathossain690/Vjudge-api，未引入其旧版依赖。
+此功能同步学员在 VJudge 的历史 AC，不执行代码代提交。适用范围为日常练习。
+
 面向 HydroOJ 的 Codeforces 远程 AC 同步插件（RMJ），仅支持 CF 账号绑定与历史 AC 检测。
 
 **当前已实现 CF 账号绑定初版，完整 RMJ 题目与成绩同步尚未实现。** 通过 Hydro 设置页钩子添加 CF 名、绑定与解绑入口，不修改 Hydro 原生成绩。

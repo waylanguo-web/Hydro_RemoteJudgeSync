@@ -16,4 +16,15 @@ function parseCFProblem(input) {
     return { contestId: Number(match[1]), index: match[2].toUpperCase() };
 }
 function cfUrl(p) { return `https://codeforces.com/contest/${p.contestId}/problem/${p.index}`; }
-module.exports = { parseCFProblem, cfUrl };
+function parseVJudgeProblem(input) {
+    let value = input.trim();
+    if (/^https?:/i.test(value)) {
+        const u = new URL(value);
+        if (!['http:', 'https:'].includes(u.protocol) || u.hostname !== 'vjudge.net' || u.username || u.password || u.port) throw new Error('请输入 VJudge 官方题目链接。');
+        value = u.pathname.match(/^\/problem\/([^/]+)\/?$/)?.[1] || '';
+    }
+    const m = value.match(/^([A-Za-z][A-Za-z0-9]*)-([A-Za-z0-9_][A-Za-z0-9_.-]{0,127})$/);
+    if (!m) throw new Error('请输入 AtCoder-abc482_a 等完整 VJudge 题号或官方题目链接。');
+    return { oj: m[1], probNum: m[2], target: value, url: `https://vjudge.net/problem/${value}` };
+}
+module.exports = { parseCFProblem, cfUrl, parseVJudgeProblem };
