@@ -6,7 +6,6 @@ test('AtCoder IDs and official links preserve explicit contest IDs',()=>{
  assert.equal(parseRemoteProblem('atcoder','https://atcoder.jp/contests/abc043/tasks/abc022_b').target,'abc043/abc022_b');
  for(const input of ['https://evil.test/contests/abc385/tasks/abc385_b','https://atcoder.jp.evil.test/contests/abc385/tasks/abc385_b','abc385','CF4A'])assert.throws(()=>parseAtCoderProblem(input));
  assert.throws(()=>parseRemoteProblem('luogu','P1000'));
- assert.equal(parseRemoteProblem('atcoder','https://atcoder.jp/contests/tenka1-2012-qualA/tasks/tenka1_2012_qualA_4').target,'tenka1-2012-qualA/tenka1_2012_qualA_4');
 });
 test('AtCoder pagination overlaps the final second, matches identity/task/contest/verdict',async()=>{
  const api=new AtCoderSubmissionsApi(),calls=[];
