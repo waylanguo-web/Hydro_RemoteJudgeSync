@@ -1,4 +1,4 @@
-export type Platform = 'codeforces' | 'atcoder' | 'luogu';
+export type Platform = 'codeforces';
 export interface RemoteAccount {
     domainId: string;
     uid: number;
