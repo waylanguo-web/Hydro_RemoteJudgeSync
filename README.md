@@ -95,6 +95,3 @@ RMJ 题目详情使用 Hydro 原生模板、标题信息栏和菜单，专用界
 评测设置的平台下拉框现支持 CF 和 ATC。AtCoder 题号可输入 `abc385_b` 或粘贴 `https://atcoder.jp/contests/abc385/tasks/abc385_b`。特殊复用题目会保留链接中的比赛 ID；存储格式为 `subType: atcoder`、`target: abc385/abc385_b`。界面保留原有间距和原生题目页。
 
 递交时使用已验证的 AtCoder 绑定账号，按时间分页查询 AtCoder Problems 的公开记录。单次最多 500 条，请求间隔至少 1.2 秒；末秒重叠避免简单加一跳过同秒记录，无法推进或超过 200 页时报错。只有对应比赛、题号、账号且结果为 AC 才写入原生 100 分 AC 记录。找不到 AC 时提示第三方同步可能延迟，本次不生成未通过记录；网络或数据格式错误同样不计成绩。CF 的既有判定规则保持不变。数据来自第三方，不保证实时；仍仅支持日常练习。
-当 AtCoder Problems 尚未同步时，插件可以使用 AtCoder 官方提交页兜底。在 Hydro 的
-`/manage/config` 中配置 `rmj.atcoder.username` 与 `rmj.atcoder.password`。建议使用只用于查询的
-专用 AtCoder 账号；密码字段会在配置管理页面隐藏，不会下发给浏览器端学员。
