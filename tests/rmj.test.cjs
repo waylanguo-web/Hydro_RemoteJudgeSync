@@ -1,6 +1,7 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');const Module=require('node:module');
 const {parseCFProblem}=require('../dist/services/rmj');
 const {CodeforcesApi,codeforcesApi}=require('../dist/providers/codeforces');
+const {atcoderSubmissionsApi}=require('../dist/providers/atcoder-submissions');
 test('CF target parser accepts canonical forms and rejects arbitrary hosts',()=>{
  for(const value of ['CF4A','4:A','cf 4 a','https://www.codeforces.com/contest/4/problem/A?locale=en#statement','https://codeforces.com/contest/4/problem/A','https://codeforces.com/problemset/problem/4/A'])assert.deepEqual(parseCFProblem(value),{contestId:4,index:'A'});
  for(const value of ['https://evil.test/4/A','0A','4','https://codeforces.com.evil.test/contest/4/problem/A'])assert.throws(()=>parseCFProblem(value));
@@ -14,11 +15,12 @@ test('CF RMJ scans older pages and distinguishes API errors from no AC',async()=
  api.call=async()=>{throw Error('network');};await assert.rejects(api.acceptance('Alice',{contestId:4,index:'A'}),/network/);
 });
 test('Hydro RMJ creates native records without local tasks, guards binding/CSRF/contest and leaves ordinary submissions alone',async()=>{
- const original=Module._load,oldAcceptance=codeforcesApi.acceptance;const hooks={};let records=[],ends=[],incs=0;
+ const original=Module._load,oldAcceptance=codeforcesApi.acceptance,oldAtCoder=atcoderSubmissionsApi.acceptance;const hooks={};let records=[],ends=[],incs=0;
  let account={handle:'Alice',handleKey:'alice',verifiedAt:new Date()};
+ let atcAccount={handle:'AtcAlice',handleKey:'atcalice',verifiedAt:new Date()};
  const pdoc={docId:9,config:{type:'rmj',target:'4:A'}};
  const host={Handler:class{},PRIV:{PRIV_USER_PROFILE:1},PERM:{PERM_EDIT_PROBLEM:2},STATUS:{STATUS_ACCEPTED:1,STATUS_WRONG_ANSWER:2},
- db:{collection:()=>({findOne:async()=>account})},
+ db:{collection:name=>({findOne:async()=>name==='rmj.cf.accounts'?account:atcAccount})},
  ProblemModel:{get:async()=>pdoc,inc:async()=>incs++},DomainModel:{incUserInDomain:async()=>incs++},
  RecordModel:{add:async(...args)=>{records.push(args);return 'rid';},update:async()=>{}},
  JudgeResultCallbackContext:{end:async(...args)=>ends.push(args)}};
@@ -45,5 +47,13 @@ test('Hydro RMJ creates native records without local tasks, guards binding/CSRF/
  await assert.rejects(submit({...make(),tdoc:{rule:'homework'}}));
  account=null;await assert.rejects(submit(make()));
  assert.equal(await submit({...make(),pdoc:{config:{type:'default'}}}),undefined);
- }finally{Module._load=original;codeforcesApi.acceptance=oldAcceptance;}
+ pdoc.config={type:'rmj',subType:'atcoder',target:'abc385/abc385_b'};
+ atcoderSubmissionsApi.acceptance=async handle=>{assert.equal(handle,'AtcAlice');return {id:456,epoch_second:2000};};
+ assert.equal(await submit(make()),'after');assert.equal(ends.at(-1)[2].score,100);assert.match(records.at(-1)[4],/atcoder/);assert.match(records.at(-1)[4],/2000/);
+ const atcPage=make();atcPage.response.body={};await hooks['handler/after/ProblemSubmit#get'](atcPage);
+ assert.equal(atcPage.response.body.rmjBindRoute,'rmj_atcoder_bind');
+ const atcCount=records.length;atcoderSubmissionsApi.acceptance=async()=>undefined;
+ await assert.rejects(submit(make()),/同步延迟/);assert.equal(records.length,atcCount);
+ atcAccount=null;await assert.rejects(submit(make()),/AtCoder/);
+ }finally{Module._load=original;codeforcesApi.acceptance=oldAcceptance;atcoderSubmissionsApi.acceptance=oldAtCoder;}
 });
