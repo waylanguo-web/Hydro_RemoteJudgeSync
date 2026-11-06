@@ -2,6 +2,7 @@ import { codeforcesApi } from './providers/codeforces';
 import { parseRemoteProblem } from '../shared/remote-problem';
 import { atcoderSubmissionsApi } from './providers/atcoder-submissions';
 import { atcoderOfficialApi } from './providers/atcoder-official';
+import { fetchDetail } from './providers/atcoder-detail';
 declare const require: (name: string) => any;
 export async function installRmj(ctx: any) {
     const { Handler, PRIV, PERM, STATUS, Schema, BadRequestError, db, ProblemModel, RecordModel, DomainModel,
@@ -102,6 +103,7 @@ export async function installRmj(ctx: any) {
         h.response.body.rmjUrl = parseRemoteProblem(platform, h.pdoc.config.target || '').url;
         h.response.body.rmjAccount = await accountStores[platform].findOne({ _id: h.user._id });
         h.response.body.rmjCsrf = csrf(h); h.response.body.page_name = 'rmj_submit';
+        h.response.body.rmjNeedId = !!h.args.rmjNeedId;
         h.response.template = 'rmj_problem_submit.html';
     });
     ctx.on('handler/before/ProblemSubmit#post', async (h: any) => {
@@ -122,13 +124,16 @@ export async function installRmj(ctx: any) {
             : await codeforcesApi.acceptance(account.handle, { contestId: p.contestId, index: p.index });
         let verificationSource = platform === 'atcoder' ? 'AtCoder Problems' : 'Codeforces API';
         if (platform === 'atcoder' && !remote) {
+            if (!h.args.submissionId) {
+                h.response.redirect = h.url('problem_submit', { pid: h.pdoc.docId }) + '?rmjNeedId=1';
+                return 'after';
+            }
             try {
-                remote = await atcoderOfficialApi.acceptance(rmjSettings.rmj.atcoder, account.handle,
-                    { contestId: p.contestId, taskId: p.taskId });
+                remote = await fetchDetail(account.handle, p.contestId!, p.taskId!, String(h.args.submissionId));
             } catch (e: any) {
                 throw new BadRequestError(e?.message || 'AtCoder 官方查询失败，请稍后重试。');
             }
-            verificationSource = 'AtCoder official authenticated submissions';
+            verificationSource = 'AtCoder official submission detail';
         }
         if (platform === 'atcoder' && !remote) throw new BadRequestError('未检测到该绑定账号对此题的 AtCoder AC；本次不记录未通过。');
         const accepted = remote ? { id: remote.id, creationTimeSeconds: platform === 'atcoder' ? remote.epoch_second : remote.creationTimeSeconds } : undefined;
@@ -138,15 +143,20 @@ export async function installRmj(ctx: any) {
         if (currentProblem?.config?.type !== 'rmj' || currentProblem.config.target !== h.pdoc.config.target || (currentProblem.config.subType || 'codeforces') !== platform) throw new Error('题目配置已变更，请刷新后重试。');
         const provenance = { source: 'RMJ remote AC verification (no local code submission)', verificationSource, platform,
             handle: account.handle, problem: p, remoteSubmissionId: accepted?.id ?? null,
-            remoteSubmittedAt: accepted?.creationTimeSeconds ?? null, synchronizedAt: new Date().toISOString() };
+            remoteSubmittedAt: accepted?.creationTimeSeconds ?? null, remoteDetails: platform === 'atcoder' ? remote : undefined,
+            synchronizedAt: new Date().toISOString() };
         const domainId = h.args.domainId;
         const rid = await RecordModel.add(domainId, h.pdoc.docId, h.user._id, '_', JSON.stringify(provenance, null, 2), false, { type: 'judge' });
         await RecordModel.update(domainId, rid, { rmj: provenance });
         await Promise.all([ProblemModel.inc(domainId, h.pdoc.docId, 'nSubmit', 1), DomainModel.incUserInDomain(domainId, h.user._id, 'nSubmit')]);
         await JudgeResultCallbackContext.end(domainId, rid, {
-            status: accepted ? STATUS.STATUS_ACCEPTED : STATUS.STATUS_WRONG_ANSWER,
-            score: accepted ? 100 : 0, time: 0, memory: 0,
-            message: accepted ? `RMJ: 已验证 ${account.handle} 在 ${platformName} 的 AC，远端提交 ${accepted.id}，提交时间 ${new Date(accepted.creationTimeSeconds * 1000).toISOString()}。这是远程验证记录，不是本地代码评测。`
+            status: platform === 'atcoder' && remote?.result ? ({ AC: STATUS.STATUS_ACCEPTED, WA: STATUS.STATUS_WRONG_ANSWER,
+                TLE: STATUS.STATUS_TIME_LIMIT_EXCEEDED, MLE: STATUS.STATUS_MEMORY_LIMIT_EXCEEDED,
+                RE: STATUS.STATUS_RUNTIME_ERROR, CE: STATUS.STATUS_COMPILE_ERROR, OLE: STATUS.STATUS_OUTPUT_LIMIT_EXCEEDED,
+                IE: STATUS.STATUS_SYSTEM_ERROR } as any)[remote.result] : accepted ? STATUS.STATUS_ACCEPTED : STATUS.STATUS_WRONG_ANSWER,
+            score: accepted && (!remote.result || remote.result === 'AC') ? 100 : 0,
+            time: remote?.time || 0, memory: remote?.memory || 0,
+            message: accepted ? `RMJ: 已验证 ${account.handle} 在 ${platformName} 的 ${remote.result || 'AC'}，远端提交 ${accepted.id}。${remote.rawScore !== undefined ? '远端原始分数：' + remote.rawScore + '。' : ''}这是远程验证记录。`
                 : `RMJ: 已完整查询 ${account.handle} 的公开历史提交，未发现该题 AC。`,
         });
         h.response.body = { rid }; h.response.redirect = h.url('record_detail', { rid });

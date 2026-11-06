@@ -59,9 +59,7 @@ test('Hydro RMJ creates native records without local tasks, guards binding/CSRF/
  const atcPage=make();atcPage.response.body={};await hooks['handler/after/ProblemSubmit#get'](atcPage);
  assert.equal(atcPage.response.body.rmjBindRoute,'rmj_atcoder_bind');
  const atcCount=records.length;atcoderSubmissionsApi.acceptance=async()=>undefined;
- atcoderOfficialApi.acceptance=async(credentials,handle,problem)=>{assert.deepEqual(credentials,{username:'judge',password:'secret'});assert.equal(handle,'AtcAlice');assert.equal(problem.taskId,'abc385_b');return {id:789,epoch_second:3000};};
- assert.equal(await submit(make()),'after');assert.equal(ends.at(-1)[2].score,100);assert.match(records.at(-1)[4],/official authenticated/);
- atcoderOfficialApi.acceptance=async()=>undefined;await assert.rejects(submit(make()),/未检测到/);assert.equal(records.length,atcCount+1);
+ const missing=make();assert.equal(await submit(missing),'after');assert.match(missing.response.redirect,/rmjNeedId=1/);assert.equal(records.length,atcCount);
  atcAccount=null;await assert.rejects(submit(make()),/AtCoder/);
  }finally{Module._load=original;codeforcesApi.acceptance=oldAcceptance;atcoderSubmissionsApi.acceptance=oldAtCoder;atcoderOfficialApi.acceptance=oldAtCoderOfficial;atcoderOfficialApi.verifyCredentials=oldVerify;}
 });
