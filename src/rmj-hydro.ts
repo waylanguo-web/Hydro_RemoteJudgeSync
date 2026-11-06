@@ -21,27 +21,38 @@ export async function installRmj(ctx: any) {
     class RmjConfigHandler extends Handler {
         async get() {
             const pdoc = await load(this);
-            this.response.template = 'rmj_config.html';
-            this.response.body = { pdoc, target: pdoc.config?.type === 'rmj' ? pdoc.config.target : '', rmjCsrf: csrf(this) };
+            this.response.redirect = this.url('problem_config', { pid: pdoc.docId });
         }
         async post(args: any) {
             const pdoc = await load(this);
             if (args.csrf !== this.session.rmjCsrf || !args.csrf) throw new Error('请刷新页面后重试。');
-            const target = parseCFProblem(String(args.target || ''));
+            if (!['rmj', 'default'].includes(args.mode)) throw new Error('请选择有效的题型。');
+            const target = args.mode === 'rmj' ? parseCFProblem(String(args.target || '')) : null;
             // Preserve unrelated config fields; store a real config.yaml through Hydro's model API.
             const raw = await ProblemModel.get(args.domainId, pdoc.docId, undefined, true);
             const config = typeof raw.config === 'string' ? yaml.load(raw.config || '{}') || {} : raw.config || {};
-            config.type = 'rmj'; config.subType = 'codeforces'; config.target = `${target.contestId}:${target.index}`;
-            delete config.langs;
+            if (target) {
+                config.type = 'rmj'; config.subType = 'codeforces'; config.target = `${target.contestId}:${target.index}`;
+                delete config.langs;
+            } else {
+                if (config.type !== 'rmj') throw new Error('普通题请使用原生编辑器保存。');
+                config.type = 'default'; delete config.subType; delete config.target;
+            }
             const serialized = yaml.dump(config);
             await ProblemModel.addTestdata(args.domainId, pdoc.docId, 'config.yaml', Buffer.from(serialized), this.user._id);
             // Hydro emits the file-change event asynchronously; persist before redirecting.
             await ProblemModel.edit(args.domainId, pdoc.docId, { config: serialized });
-            this.response.redirect = this.url('problem_detail', { pid: pdoc.docId });
+            this.response.body = { ok: true };
+            if (!this.request.json) this.response.redirect = this.url('problem_config', { pid: pdoc.docId });
         }
     }
     ctx.Route('rmj_config', '/p/:pid/rmj', RmjConfigHandler, PRIV.PRIV_USER_PROFILE);
-    ctx.on('handler/after/ProblemEdit#get', (h: any) => { h.response.template = 'rmj_problem_edit.html'; });
+    ctx.on('handler/after/ProblemConfig#get', (h: any) => {
+        h.UiContext.rmjConfig = {
+            type: h.pdoc.config?.type, target: h.pdoc.config?.target || '', csrf: csrf(h),
+            endpoint: h.url('rmj_config', { pid: h.pdoc.docId }),
+        };
+    });
     ctx.on('handler/after/ProblemDetail#get', (h: any) => {
         if (!isRmj(h)) return;
         rejectContest(h);

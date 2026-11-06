@@ -9,7 +9,8 @@
     "dist",
     "templates",
     "locales",
-    "index.js"
+    "index.js",
+    "frontend"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",

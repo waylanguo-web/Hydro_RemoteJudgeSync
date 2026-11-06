@@ -25,6 +25,12 @@ test('Hydro RMJ creates native records without local tasks, guards binding/CSRF/
  Module._load=function(n,...rest){if(n==='hydrooj')return host;if(n==='js-yaml')return {};return original.call(this,n,...rest);};
  try {
  await require('../dist/rmj-hydro').installRmj({on:(n,f)=>hooks[n]=f,Route:()=>{}});
+ assert.equal(hooks['handler/after/ProblemEdit#get'],undefined);
+ const configPage={pdoc,args:{},session:{},UiContext:{},response:{template:'problem_config.html'},url:()=>'/p/9/rmj'};
+ hooks['handler/after/ProblemConfig#get'](configPage);
+ assert.equal(configPage.response.template,'problem_config.html');
+ assert.equal(configPage.UiContext.rmjConfig.target,'4:A');
+ assert.ok(configPage.UiContext.rmjConfig.csrf);
  const make=()=>({pdoc,user:{_id:7},args:{domainId:'system',csrf:'token'},session:{rmjCsrf:'token'},response:{},limitRate:async()=>{},url:()=>'/record/rid'});
  const submit=hooks['handler/before/ProblemSubmit#post'];
  codeforcesApi.acceptance=async()=>({id:123,creationTimeSeconds:1000});

@@ -1,6 +1,0 @@
-{% extends "layout/basic.html" %}{% block content %}
-<div class="row"><div class="columns"><div class="section"><div class="section__header"><h1 class="section__title">题目类型：RMJ · Codeforces</h1></div><div class="section__body typo">
-<p>{{ pdoc.title }}。保存后此题将改为 RMJ 类型，提交按钮只检测绑定 CF 账号的历史 AC，不接收代码、不运行本地评测。仅支持日常练习。</p>
-<form method="post"><input type="hidden" name="csrf" value="{{ rmjCsrf }}"><label>CF 原题 <input class="textbox" name="target" required value="{{ target }}" placeholder="CF4A 或 https://codeforces.com/contest/4/problem/A"></label><button class="button primary">保存为 RMJ 类型</button></form>
-<p>题面仍在原题编辑页维护。普通题的其他配置会保留；恢复普通类型需在测试数据配置中修改 type。</p>
-</div></div></div></div>{% endblock %}
