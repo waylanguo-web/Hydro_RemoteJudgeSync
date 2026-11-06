@@ -21,10 +21,11 @@ function parseVJudgeProblem(input) {
     if (/^https?:/i.test(value)) {
         const u = new URL(value);
         if (!['http:', 'https:'].includes(u.protocol) || u.hostname !== 'vjudge.net' || u.username || u.password || u.port) throw new Error('请输入 VJudge 官方题目链接。');
-        value = u.pathname.match(/^\/problem\/([^/]+)\/?$/)?.[1] || '';
+        const encoded = u.pathname.match(/^\/problem\/([^/]+)\/?$/)?.[1] || '';
+        try { value = decodeURIComponent(encoded); } catch { throw new Error('VJudge 题目链接编码不正确。'); }
     }
-    const m = value.match(/^([A-Za-z][A-Za-z0-9]*)-([A-Za-z0-9_][A-Za-z0-9_.-]{0,127})$/);
+    const m = value.match(/^([\p{L}][\p{L}\p{N}]{0,63})-([A-Za-z0-9_][A-Za-z0-9_.-]{0,127})$/u);
     if (!m) throw new Error('请输入 AtCoder-abc482_a 等完整 VJudge 题号或官方题目链接。');
-    return { oj: m[1], probNum: m[2], target: value, url: `https://vjudge.net/problem/${value}` };
+    return { oj: m[1], probNum: m[2], target: value, url: `https://vjudge.net/problem/${encodeURIComponent(value)}` };
 }
 module.exports = { parseCFProblem, cfUrl, parseVJudgeProblem };
