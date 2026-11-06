@@ -1,17 +1,18 @@
 const { parseCFProblem, cfUrl } = require('./cf-problem');
 function parseAtCoderProblem(input) {
-    const value = input.trim().toLowerCase();
+    let value = input.trim();
+    if (/^(abc|arc|agc|ahc)[0-9]+_[a-z0-9]+$/i.test(value)) value = value.toLowerCase();
     let contestId, taskId;
-    if (/^https?:\/\//.test(value)) {
+    if (/^https?:\/\//i.test(value)) {
         let url; try { url = new URL(value); } catch {}
         if (!url || url.hostname !== 'atcoder.jp' || url.username || url.password) throw new Error('请输入 AtCoder 官方题目链接。');
-        const m = url.pathname.match(/^\/contests\/([a-z0-9_-]+)\/tasks\/([a-z0-9_]+)\/?$/);
+        const m = url.pathname.match(/^\/contests\/([a-z0-9_-]+)\/tasks\/([a-z0-9_]+)\/?$/i);
         if (m) [, contestId, taskId] = m;
     } else {
-        const explicit = value.match(/^([a-z0-9_-]+)\/([a-z0-9_]+)$/);
+        const explicit = value.match(/^([a-z0-9_-]+)\/([a-z0-9_]+)$/i);
         if (explicit) [, contestId, taskId] = explicit;
         else {
-            const simple = value.match(/^([a-z0-9-]+)_([a-z0-9]+)$/);
+            const simple = value.match(/^([a-z0-9-]+)_([a-z0-9]+)$/i);
             if (simple) { contestId = simple[1]; taskId = value; }
         }
     }
