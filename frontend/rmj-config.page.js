@@ -1,29 +1,6 @@
 import { addPage, NamedPage, request, Notification } from '@hydrooj/ui-default';
 import { parseRemoteProblem } from '../shared/remote-problem.js';
 
-addPage(new NamedPage('manage_config', () => {
-    const data = window.UiContext.rmjAtcoderConfigTest;
-    const sidebar = document.querySelector('.medium-3.columns [data-sticky]');
-    if (!data || !sidebar || document.getElementById('rmj-atcoder-config-test')) return;
-    const section = document.createElement('div');
-    section.id = 'rmj-atcoder-config-test'; section.className = 'section side';
-    section.innerHTML = `<div class="section__header"><h1 class="section__title">RMJ · AtCoder</h1></div>
-<div class="section__body"><p>保存用户名和密码后，在此验证官方登录。</p>
-<button type="button" class="button rounded primary" style="width:100%">检测验证账号</button>
-<p role="status" style="display:none;margin-top:12px;word-break:break-word"></p></div>`;
-    sidebar.prepend(section);
-    const button = section.querySelector('button'); const status = section.querySelector('[role="status"]');
-    button.addEventListener('click', async () => {
-        button.disabled = true; status.style.display = ''; status.textContent = '正在登录 AtCoder 检测……';
-        try {
-            const result = await request.post(data.endpoint, { csrf: data.csrf });
-            status.textContent = `检测成功：已登录 ${result.username}`; Notification.success(status.textContent);
-        } catch (e) {
-            status.textContent = e.message || '检测失败，请检查配置。'; Notification.error(status.textContent);
-        } finally { button.disabled = false; }
-    });
-}));
-
 addPage(new NamedPage('problem_config', () => {
     const data = window.UiContext.rmjConfig;
     const editor = document.getElementById('ProblemConfig');

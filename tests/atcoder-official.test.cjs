@@ -21,11 +21,3 @@ test('official AtCoder fallback rejects rows for another user, task or verdict',
   '<tr><td><a href="/contests/abc482/tasks/abc482_a">A</a><a href="/users/warming">warming</a><span>WA</span><a href="/contests/abc482/submissions/3">D</a></td></tr>',
  ]){api.submissions=async()=>new Response(html,{status:200});assert.equal(await api.acceptance({username:'judge',password:'pw'},'warming',{contestId:'abc482',taskId:'abc482_a'}),undefined);}
 });
-
-test('official AtCoder credential test rejects redirects back to login',async()=>{
- const api=new AtCoderOfficialApi();
- api.request=async(url,init={})=>!init.method
-  ?new Response('<input name="csrf_token" value="token">',{status:200})
-  :new Response('',{status:302,headers:{location:'/login?lang=en'}});
- await assert.rejects(api.verifyCredentials({username:'wrong',password:'wrong'}),/登录失败/);
-});
