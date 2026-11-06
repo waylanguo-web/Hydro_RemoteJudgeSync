@@ -1,13 +1,22 @@
 import { codeforcesApi } from './providers/codeforces';
 import { parseRemoteProblem } from '../shared/remote-problem';
 import { atcoderSubmissionsApi } from './providers/atcoder-submissions';
+import { atcoderOfficialApi } from './providers/atcoder-official';
 declare const require: (name: string) => any;
 export async function installRmj(ctx: any) {
-    const { Handler, PRIV, PERM, STATUS, db, ProblemModel, RecordModel, DomainModel,
+    const { Handler, PRIV, PERM, STATUS, Schema, BadRequestError, db, ProblemModel, RecordModel, DomainModel,
         JudgeResultCallbackContext } = require('hydrooj');
     const { Buffer } = require('buffer');
     const yaml = require('js-yaml');
     const accountStores: Record<string, any> = { codeforces: db.collection('rmj.cf.accounts'), atcoder: db.collection('rmj.atcoder.accounts') };
+    const rmjSettings = ctx.setting.requestConfig(Schema.object({
+        rmj: Schema.object({
+            atcoder: Schema.object({
+                username: Schema.string().default('').description('AtCoder 专用验证账号用户名'),
+                password: Schema.string().default('').role('secret').description('AtCoder 专用验证账号密码（保存后隐藏）'),
+            }).description('AtCoder 官方查询兜底'),
+        }).description('RMJ 远程评测'),
+    }));
     const getPlatform = (h: any) => {
         const platform = h.pdoc.config.subType || 'codeforces';
         if (!accountStores[platform]) throw new Error('不支持该 RMJ 平台。');
@@ -92,16 +101,22 @@ export async function installRmj(ctx: any) {
         if (!account?.verifiedAt) throw new Error(`请先在账号设置中验证绑定 ${platformName} 账号。`);
         const p = parseRemoteProblem(platform, h.pdoc.config.target || '');
         // Fetch before creating a Hydro record: network errors must never become WA.
-        const remote: any = platform === 'atcoder'
+        let remote: any = platform === 'atcoder'
             ? await atcoderSubmissionsApi.acceptance(account.handle, { contestId: p.contestId, taskId: p.taskId })
             : await codeforcesApi.acceptance(account.handle, { contestId: p.contestId, index: p.index });
-        if (platform === 'atcoder' && !remote) throw new Error('暂未检测到 AtCoder AC。AtCoder Problems 为第三方数据源，可能存在同步延迟；本次不记录未通过，请稍后重试。');
+        let verificationSource = platform === 'atcoder' ? 'AtCoder Problems' : 'Codeforces API';
+        if (platform === 'atcoder' && !remote) {
+            remote = await atcoderOfficialApi.acceptance(rmjSettings.rmj.atcoder, account.handle,
+                { contestId: p.contestId, taskId: p.taskId });
+            verificationSource = 'AtCoder official authenticated submissions';
+        }
+        if (platform === 'atcoder' && !remote) throw new BadRequestError('未检测到该绑定账号对此题的 AtCoder AC；本次不记录未通过。');
         const accepted = remote ? { id: remote.id, creationTimeSeconds: platform === 'atcoder' ? remote.epoch_second : remote.creationTimeSeconds } : undefined;
         const currentAccount = await accounts.findOne({ _id: h.user._id });
         if (currentAccount?.handleKey !== account.handleKey) throw new Error('绑定账号已变更，请重新检测。');
         const currentProblem = await ProblemModel.get(h.args.domainId, h.pdoc.docId);
         if (currentProblem?.config?.type !== 'rmj' || currentProblem.config.target !== h.pdoc.config.target || (currentProblem.config.subType || 'codeforces') !== platform) throw new Error('题目配置已变更，请刷新后重试。');
-        const provenance = { source: 'RMJ remote AC verification (no local code submission)', platform,
+        const provenance = { source: 'RMJ remote AC verification (no local code submission)', verificationSource, platform,
             handle: account.handle, problem: p, remoteSubmissionId: accepted?.id ?? null,
             remoteSubmittedAt: accepted?.creationTimeSeconds ?? null, synchronizedAt: new Date().toISOString() };
         const domainId = h.args.domainId;

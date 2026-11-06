@@ -2,6 +2,7 @@ const {test}=require('node:test');const assert=require('node:assert/strict');con
 const {parseCFProblem}=require('../dist/services/rmj');
 const {CodeforcesApi,codeforcesApi}=require('../dist/providers/codeforces');
 const {atcoderSubmissionsApi}=require('../dist/providers/atcoder-submissions');
+const {atcoderOfficialApi}=require('../dist/providers/atcoder-official');
 test('CF target parser accepts canonical forms and rejects arbitrary hosts',()=>{
  for(const value of ['CF4A','4:A','cf 4 a','https://www.codeforces.com/contest/4/problem/A?locale=en#statement','https://codeforces.com/contest/4/problem/A','https://codeforces.com/problemset/problem/4/A'])assert.deepEqual(parseCFProblem(value),{contestId:4,index:'A'});
  for(const value of ['https://evil.test/4/A','0A','4','https://codeforces.com.evil.test/contest/4/problem/A'])assert.throws(()=>parseCFProblem(value));
@@ -15,18 +16,19 @@ test('CF RMJ scans older pages and distinguishes API errors from no AC',async()=
  api.call=async()=>{throw Error('network');};await assert.rejects(api.acceptance('Alice',{contestId:4,index:'A'}),/network/);
 });
 test('Hydro RMJ creates native records without local tasks, guards binding/CSRF/contest and leaves ordinary submissions alone',async()=>{
- const original=Module._load,oldAcceptance=codeforcesApi.acceptance,oldAtCoder=atcoderSubmissionsApi.acceptance;const hooks={};let records=[],ends=[],incs=0;
+ const original=Module._load,oldAcceptance=codeforcesApi.acceptance,oldAtCoder=atcoderSubmissionsApi.acceptance,oldAtCoderOfficial=atcoderOfficialApi.acceptance;const hooks={};let records=[],ends=[],incs=0;
  let account={handle:'Alice',handleKey:'alice',verifiedAt:new Date()};
  let atcAccount={handle:'AtcAlice',handleKey:'atcalice',verifiedAt:new Date()};
  const pdoc={docId:9,config:{type:'rmj',target:'4:A'}};
- const host={Handler:class{},PRIV:{PRIV_USER_PROFILE:1},PERM:{PERM_EDIT_PROBLEM:2},STATUS:{STATUS_ACCEPTED:1,STATUS_WRONG_ANSWER:2},
+ const schemaNode={default(){return this},description(){return this},role(){return this}};
+ const host={Handler:class{},BadRequestError:class extends Error{},Schema:{string:()=>Object.create(schemaNode),object:()=>Object.create(schemaNode)},PRIV:{PRIV_USER_PROFILE:1},PERM:{PERM_EDIT_PROBLEM:2},STATUS:{STATUS_ACCEPTED:1,STATUS_WRONG_ANSWER:2},
  db:{collection:name=>({findOne:async()=>name==='rmj.cf.accounts'?account:atcAccount})},
  ProblemModel:{get:async()=>pdoc,inc:async()=>incs++},DomainModel:{incUserInDomain:async()=>incs++},
  RecordModel:{add:async(...args)=>{records.push(args);return 'rid';},update:async()=>{}},
  JudgeResultCallbackContext:{end:async(...args)=>ends.push(args)}};
  Module._load=function(n,...rest){if(n==='hydrooj')return host;if(n==='js-yaml')return {};return original.call(this,n,...rest);};
  try {
- await require('../dist/rmj-hydro').installRmj({on:(n,f)=>hooks[n]=f,Route:()=>{}});
+ await require('../dist/rmj-hydro').installRmj({setting:{requestConfig:()=>({rmj:{atcoder:{username:'judge',password:'secret'}}})},on:(n,f)=>hooks[n]=f,Route:()=>{}});
  assert.equal(hooks['handler/after/ProblemEdit#get'],undefined);
  const detailPage={pdoc,args:{},response:{template:'problem_detail.html',body:{page_name:'problem_detail'}}};
  hooks['handler/after/ProblemDetail#get'](detailPage);
@@ -53,7 +55,9 @@ test('Hydro RMJ creates native records without local tasks, guards binding/CSRF/
  const atcPage=make();atcPage.response.body={};await hooks['handler/after/ProblemSubmit#get'](atcPage);
  assert.equal(atcPage.response.body.rmjBindRoute,'rmj_atcoder_bind');
  const atcCount=records.length;atcoderSubmissionsApi.acceptance=async()=>undefined;
- await assert.rejects(submit(make()),/同步延迟/);assert.equal(records.length,atcCount);
+ atcoderOfficialApi.acceptance=async(credentials,handle,problem)=>{assert.deepEqual(credentials,{username:'judge',password:'secret'});assert.equal(handle,'AtcAlice');assert.equal(problem.taskId,'abc385_b');return {id:789,epoch_second:3000};};
+ assert.equal(await submit(make()),'after');assert.equal(ends.at(-1)[2].score,100);assert.match(records.at(-1)[4],/official authenticated/);
+ atcoderOfficialApi.acceptance=async()=>undefined;await assert.rejects(submit(make()),/未检测到/);assert.equal(records.length,atcCount+1);
  atcAccount=null;await assert.rejects(submit(make()),/AtCoder/);
- }finally{Module._load=original;codeforcesApi.acceptance=oldAcceptance;atcoderSubmissionsApi.acceptance=oldAtCoder;}
+ }finally{Module._load=original;codeforcesApi.acceptance=oldAcceptance;atcoderSubmissionsApi.acceptance=oldAtCoder;atcoderOfficialApi.acceptance=oldAtCoderOfficial;}
 });
