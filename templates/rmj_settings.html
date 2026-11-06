@@ -13,4 +13,9 @@
 <a class="button rounded primary" href="{{ url('rmj_atcoder_bind') }}">绑定</a>
 {% if rmjAtCoderAccount %}<form method="post" action="{{ url('rmj_atcoder_bind') }}" style="display:inline"><input type="hidden" name="csrf" value="{{ rmjCsrf }}"><button class="button rounded" name="action" value="unlink">解绑</button></form>{% endif %}
 </div></div>
+<div class="section"><div class="section__header"><h1 class="section__title">洛谷账号</h1></div><div class="section__body">
+<label>洛谷账号 <input class="textbox" type="text" readonly value="{% if rmjLuoguAccount %}{{ rmjLuoguAccount.displayName }}（UID {{ rmjLuoguAccount.handle }}）{% else %}未绑定{% endif %}" style="width:280px;display:inline-block"></label>
+<a class="button rounded primary" href="{{ url('rmj_luogu_bind') }}">绑定</a>
+{% if rmjLuoguAccount %}<form method="post" action="{{ url('rmj_luogu_bind') }}" style="display:inline"><input type="hidden" name="csrf" value="{{ rmjCsrf }}"><button class="button rounded" name="action" value="unlink">解绑</button></form>{% endif %}
+</div></div>
 {% endblock %}
