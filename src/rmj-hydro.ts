@@ -33,7 +33,10 @@ export async function installRmj(ctx: any) {
             const config = typeof raw.config === 'string' ? yaml.load(raw.config || '{}') || {} : raw.config || {};
             config.type = 'rmj'; config.subType = 'codeforces'; config.target = `${target.contestId}:${target.index}`;
             delete config.langs;
-            await ProblemModel.addTestdata(args.domainId, pdoc.docId, 'config.yaml', Buffer.from(yaml.dump(config)), this.user._id);
+            const serialized = yaml.dump(config);
+            await ProblemModel.addTestdata(args.domainId, pdoc.docId, 'config.yaml', Buffer.from(serialized), this.user._id);
+            // Hydro emits the file-change event asynchronously; persist before redirecting.
+            await ProblemModel.edit(args.domainId, pdoc.docId, { config: serialized });
             this.response.redirect = this.url('problem_detail', { pid: pdoc.docId });
         }
     }
