@@ -10,7 +10,8 @@
     "templates",
     "locales",
     "index.js",
-    "frontend"
+    "frontend",
+    "shared"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",

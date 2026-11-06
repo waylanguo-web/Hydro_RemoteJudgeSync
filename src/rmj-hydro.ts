@@ -27,6 +27,7 @@ export async function installRmj(ctx: any) {
             const pdoc = await load(this);
             if (args.csrf !== this.session.rmjCsrf || !args.csrf) throw new Error('请刷新页面后重试。');
             if (!['rmj', 'default'].includes(args.mode)) throw new Error('请选择有效的题型。');
+            if (args.mode === 'rmj' && args.platform && args.platform !== 'codeforces') throw new Error('当前仅支持 CF 平台。');
             const target = args.mode === 'rmj' ? parseCFProblem(String(args.target || '')) : null;
             // Preserve unrelated config fields; store a real config.yaml through Hydro's model API.
             const raw = await ProblemModel.get(args.domainId, pdoc.docId, undefined, true);
@@ -49,7 +50,8 @@ export async function installRmj(ctx: any) {
     ctx.Route('rmj_config', '/p/:pid/rmj', RmjConfigHandler, PRIV.PRIV_USER_PROFILE);
     ctx.on('handler/after/ProblemConfig#get', (h: any) => {
         h.UiContext.rmjConfig = {
-            type: h.pdoc.config?.type, target: h.pdoc.config?.target || '', csrf: csrf(h),
+            type: h.pdoc.config?.type, platform: h.pdoc.config?.subType || 'codeforces',
+            target: h.pdoc.config?.target || '', problemId: h.pdoc.pid || '', csrf: csrf(h),
             endpoint: h.url('rmj_config', { pid: h.pdoc.docId }),
         };
     });

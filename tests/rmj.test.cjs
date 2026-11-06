@@ -2,7 +2,7 @@ const {test}=require('node:test');const assert=require('node:assert/strict');con
 const {parseCFProblem}=require('../dist/services/rmj');
 const {CodeforcesApi,codeforcesApi}=require('../dist/providers/codeforces');
 test('CF target parser accepts canonical forms and rejects arbitrary hosts',()=>{
- for(const value of ['CF4A','4:A','https://codeforces.com/contest/4/problem/A','https://codeforces.com/problemset/problem/4/A'])assert.deepEqual(parseCFProblem(value),{contestId:4,index:'A'});
+ for(const value of ['CF4A','4:A','cf 4 a','https://www.codeforces.com/contest/4/problem/A?locale=en#statement','https://codeforces.com/contest/4/problem/A','https://codeforces.com/problemset/problem/4/A'])assert.deepEqual(parseCFProblem(value),{contestId:4,index:'A'});
  for(const value of ['https://evil.test/4/A','0A','4','https://codeforces.com.evil.test/contest/4/problem/A'])assert.throws(()=>parseCFProblem(value));
 });
 test('CF RMJ scans older pages and distinguishes API errors from no AC',async()=>{
