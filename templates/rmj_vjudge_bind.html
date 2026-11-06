@@ -1,0 +1,10 @@
+{% extends "layout/home_base.html" %}{% block home_content %}
+<div class="section"><div class="section__header"><h1 class="section__title">绑定 VJudge 账号</h1></div><div class="section__body typo">
+{% if message %}<p role="status">{{ message }}</p>{% endif %}
+{% if account %}<p>已绑定：{{ account.handle }}</p><form method="post"><input type="hidden" name="csrf" value="{{ rmjCsrf }}"><button class="button" name="action" value="unlink">解绑</button></form>
+{% else %}<form method="post"><input type="hidden" name="csrf" value="{{ rmjCsrf }}"><label>VJudge 用户名 <input class="textbox" name="handle" maxlength="32" required></label><button class="button primary" name="action" value="start">开始绑定</button></form>
+{% if challenge %}<p>验证账号：{{ challenge.handle }}</p><p>请记下原 School（学校）内容，在 VJudge 的个人资料编辑中将 School 完整替换为以下验证码，并在 10 分钟内返回检测。绑定后可恢复。</p><pre>{{ challenge.token }}</pre>
+<p><a href="https://vjudge.net/user/{{ challenge.handle }}" target="_blank" rel="noopener noreferrer">打开 VJudge 个人主页</a></p>
+<form method="post"><input type="hidden" name="csrf" value="{{ rmjCsrf }}"><button class="button primary" name="action" value="check">检测并绑定</button></form>{% endif %}{% endif %}
+<p>此功能仅验证账号归属，不提供代提交授权，无需填写外站密码或 Cookie。</p><a href="{{ url('home_settings', category='account') }}">返回账号设置</a>
+</div></div>{% endblock %}
