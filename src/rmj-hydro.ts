@@ -1,18 +1,12 @@
 import { codeforcesApi } from './providers/codeforces';
-import { parseRemoteProblem } from '../shared/remote-problem';
-import { atcoderSubmissionsApi } from './providers/atcoder-submissions';
+import { parseCFProblem, cfUrl } from './services/rmj';
 declare const require: (name: string) => any;
 export async function installRmj(ctx: any) {
     const { Handler, PRIV, PERM, STATUS, db, ProblemModel, RecordModel, DomainModel,
         JudgeResultCallbackContext } = require('hydrooj');
     const { Buffer } = require('buffer');
     const yaml = require('js-yaml');
-    const accountStores: Record<string, any> = { codeforces: db.collection('rmj.cf.accounts'), atcoder: db.collection('rmj.atcoder.accounts') };
-    const getPlatform = (h: any) => {
-        const platform = h.pdoc.config.subType || 'codeforces';
-        if (!accountStores[platform]) throw new Error('不支持该 RMJ 平台。');
-        return platform;
-    };
+    const accounts = db.collection('rmj.cf.accounts');
     const csrf = (h: any) => h.session.rmjCsrf ||= crypto.randomUUID();
     const isRmj = (h: any) => h.pdoc?.config?.type === 'rmj';
     const rejectContest = (h: any) => { if (h.tdoc || h.args.tid) throw new Error('RMJ 初版仅支持日常练习，暂不支持比赛和作业。'); };
@@ -33,13 +27,13 @@ export async function installRmj(ctx: any) {
             const pdoc = await load(this);
             if (args.csrf !== this.session.rmjCsrf || !args.csrf) throw new Error('请刷新页面后重试。');
             if (!['rmj', 'default'].includes(args.mode)) throw new Error('请选择有效的题型。');
-            const platform = args.platform || 'codeforces';
-            const target = args.mode === 'rmj' ? parseRemoteProblem(platform, String(args.target || '')) : null;
+            if (args.mode === 'rmj' && args.platform && args.platform !== 'codeforces') throw new Error('当前仅支持 CF 平台。');
+            const target = args.mode === 'rmj' ? parseCFProblem(String(args.target || '')) : null;
             // Preserve unrelated config fields; store a real config.yaml through Hydro's model API.
             const raw = await ProblemModel.get(args.domainId, pdoc.docId, undefined, true);
             const config = typeof raw.config === 'string' ? yaml.load(raw.config || '{}') || {} : raw.config || {};
             if (target) {
-                config.type = 'rmj'; config.subType = platform; config.target = target.target;
+                config.type = 'rmj'; config.subType = 'codeforces'; config.target = `${target.contestId}:${target.index}`;
                 delete config.langs;
             } else {
                 if (config.type !== 'rmj') throw new Error('普通题请使用原生编辑器保存。');
@@ -70,12 +64,8 @@ export async function installRmj(ctx: any) {
     ctx.on('handler/after/ProblemSubmit#get', async (h: any) => {
         if (!isRmj(h)) return;
         rejectContest(h);
-        const platform = getPlatform(h);
-        h.response.body.rmjPlatform = platform;
-        h.response.body.rmjPlatformName = platform === 'atcoder' ? 'AtCoder' : 'CF';
-        h.response.body.rmjBindRoute = platform === 'atcoder' ? 'rmj_atcoder_bind' : 'rmj_cf_bind';
-        h.response.body.rmjUrl = parseRemoteProblem(platform, h.pdoc.config.target || '').url;
-        h.response.body.rmjAccount = await accountStores[platform].findOne({ _id: h.user._id });
+        h.response.body.rmjUrl = cfUrl(parseCFProblem(h.pdoc.config.target || ''));
+        h.response.body.rmjAccount = await accounts.findOne({ _id: h.user._id });
         h.response.body.rmjCsrf = csrf(h); h.response.body.page_name = 'rmj_submit';
         h.response.template = 'rmj_problem_submit.html';
     });
@@ -85,23 +75,16 @@ export async function installRmj(ctx: any) {
         if (!h.args.csrf || h.args.csrf !== h.session.rmjCsrf) throw new Error('请刷新提交页面后重试。');
         if (h.args.pretest) throw new Error('RMJ 不支持自测。');
         await h.limitRate('rmj_check', 60, 2);
-        const platform = getPlatform(h);
-        const platformName = platform === 'atcoder' ? 'AtCoder' : 'CF';
-        const accounts = accountStores[platform];
         const account = await accounts.findOne({ _id: h.user._id });
-        if (!account?.verifiedAt) throw new Error(`请先在账号设置中验证绑定 ${platformName} 账号。`);
-        const p = parseRemoteProblem(platform, h.pdoc.config.target || '');
+        if (!account?.verifiedAt) throw new Error('请先在账号设置中验证绑定 CF 账号。');
+        const p = parseCFProblem(h.pdoc.config.target || '');
         // Fetch before creating a Hydro record: network errors must never become WA.
-        const remote: any = platform === 'atcoder'
-            ? await atcoderSubmissionsApi.acceptance(account.handle, { contestId: p.contestId, taskId: p.taskId })
-            : await codeforcesApi.acceptance(account.handle, { contestId: p.contestId, index: p.index });
-        if (platform === 'atcoder' && !remote) throw new Error('暂未检测到 AtCoder AC。AtCoder Problems 为第三方数据源，可能存在同步延迟；本次不记录未通过，请稍后重试。');
-        const accepted = remote ? { id: remote.id, creationTimeSeconds: platform === 'atcoder' ? remote.epoch_second : remote.creationTimeSeconds } : undefined;
+        const accepted = await codeforcesApi.acceptance(account.handle, p);
         const currentAccount = await accounts.findOne({ _id: h.user._id });
         if (currentAccount?.handleKey !== account.handleKey) throw new Error('绑定账号已变更，请重新检测。');
         const currentProblem = await ProblemModel.get(h.args.domainId, h.pdoc.docId);
-        if (currentProblem?.config?.type !== 'rmj' || currentProblem.config.target !== h.pdoc.config.target || (currentProblem.config.subType || 'codeforces') !== platform) throw new Error('题目配置已变更，请刷新后重试。');
-        const provenance = { source: 'RMJ remote AC verification (no local code submission)', platform,
+        if (currentProblem?.config?.type !== 'rmj' || currentProblem.config.target !== h.pdoc.config.target) throw new Error('题目配置已变更，请刷新后重试。');
+        const provenance = { source: 'RMJ remote AC verification (no local code submission)', platform: 'codeforces',
             handle: account.handle, problem: p, remoteSubmissionId: accepted?.id ?? null,
             remoteSubmittedAt: accepted?.creationTimeSeconds ?? null, synchronizedAt: new Date().toISOString() };
         const domainId = h.args.domainId;
@@ -111,7 +94,7 @@ export async function installRmj(ctx: any) {
         await JudgeResultCallbackContext.end(domainId, rid, {
             status: accepted ? STATUS.STATUS_ACCEPTED : STATUS.STATUS_WRONG_ANSWER,
             score: accepted ? 100 : 0, time: 0, memory: 0,
-            message: accepted ? `RMJ: 已验证 ${account.handle} 在 ${platformName} 的 AC，远端提交 ${accepted.id}，提交时间 ${new Date(accepted.creationTimeSeconds * 1000).toISOString()}。这是远程验证记录，不是本地代码评测。`
+            message: accepted ? `RMJ: 已验证 ${account.handle} 在 CF 的 AC，远端提交 ${accepted.id}，提交时间 ${new Date(accepted.creationTimeSeconds * 1000).toISOString()}。这是远程验证记录，不是本地代码评测。`
                 : `RMJ: 已完整查询 ${account.handle} 的公开历史提交，未发现该题 AC。`,
         });
         h.response.body = { rid }; h.response.redirect = h.url('record_detail', { rid });

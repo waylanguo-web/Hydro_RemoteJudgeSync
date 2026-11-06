@@ -1,5 +1,5 @@
 import { addPage, NamedPage, request, Notification } from '@hydrooj/ui-default';
-import { parseRemoteProblem } from '../shared/remote-problem.js';
+import { parseCFProblem, cfUrl } from '../shared/cf-problem.js';
 
 addPage(new NamedPage('problem_config', () => {
     const data = window.UiContext.rmjConfig;
@@ -19,7 +19,7 @@ addPage(new NamedPage('problem_config', () => {
     form.id = 'rmj-config-form';
     form.className = 'section__body';
     form.innerHTML = `<div class="row"><div class="medium-4 columns"><label>平台
-<select class="select" name="rmj-platform" style="width:100%;margin-top:12px"><option value="codeforces">CF · Codeforces</option><option value="atcoder">ATC · AtCoder</option></select>
+<select class="select" name="rmj-platform" style="width:100%;margin-top:12px"><option value="codeforces">CF · Codeforces</option></select>
 </label></div></div>
 <div class="row" style="margin-top:36px"><div class="medium-8 columns"><label>题目编号
 <input class="textbox" name="rmj-target" required placeholder="CF2276A、2276A 或粘贴原题链接" style="width:100%;margin-top:12px"></label>
@@ -36,7 +36,7 @@ addPage(new NamedPage('problem_config', () => {
     const preview = form.querySelector('[data-rmj-preview]');
     const link = preview.querySelector('a');
     mode.value = data.type === 'rmj' ? 'rmj' : 'native';
-    platform.value = data.platform === 'atcoder' ? 'atcoder' : 'codeforces';
+    platform.value = 'codeforces';
     target.value = data.target || (data.type === 'rmj' && /^CF[1-9][0-9]*[A-Z][0-9]?$/i.test(data.problemId || '') ? data.problemId : '');
     function extract(showError = false) {
         target.setCustomValidity('');
@@ -44,10 +44,10 @@ addPage(new NamedPage('problem_config', () => {
         preview.style.display = 'none';
         if (!target.value.trim()) return null;
         try {
-            const problem = parseRemoteProblem(platform.value, target.value);
-            target.value = platform.value === 'atcoder' && problem.contestId !== problem.taskId.split('_')[0] ? problem.target : problem.label;
+            const problem = parseCFProblem(target.value);
+            target.value = `CF${problem.contestId}${problem.index}`;
             link.textContent = target.value;
-            link.href = problem.url;
+            link.href = cfUrl(problem);
             preview.style.display = '';
             return problem;
         } catch (e) {
@@ -77,11 +77,6 @@ addPage(new NamedPage('problem_config', () => {
             save.disabled = restore.disabled = false;
         }
     }
-    function updatePlatform() {
-        target.placeholder = platform.value === 'atcoder' ? 'abc385_b 或 AtCoder 原题链接' : 'CF2276A、2276A 或粘贴原题链接';
-        extract();
-    }
-    platform.addEventListener('change', updatePlatform);
     mode.addEventListener('change', update);
     target.addEventListener('input', () => { target.setCustomValidity(''); preview.style.display = 'none'; });
     target.addEventListener('change', () => extract(true));
@@ -89,6 +84,6 @@ addPage(new NamedPage('problem_config', () => {
     target.addEventListener('paste', () => setTimeout(() => extract(true), 0));
     form.addEventListener('submit', e => { e.preventDefault(); persist(); });
     restore.addEventListener('click', () => persist(true));
-    updatePlatform();
+    extract();
     update();
 }));

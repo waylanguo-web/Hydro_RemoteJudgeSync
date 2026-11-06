@@ -1,8 +1,8 @@
 {% extends "layout/basic.html" %}{% block content %}
-<div class="row"><div class="columns"><div class="section"><div class="section__header"><h1 class="section__title">RMJ · 检测 {{ rmjPlatformName }} AC</h1></div><div class="section__body typo">
-<p>{{ pdoc.title }} · <a href="{{ rmjUrl }}" target="_blank" rel="noopener noreferrer">{{ rmjPlatformName }} 原题</a></p>
-{% if rmjAccount %}<p>当前绑定账号：<strong>{{ rmjAccount.handle }}</strong></p>{% if rmjPlatform == 'atcoder' %}<p>查询 AtCoder Problems 收录的历史 AC。第三方同步可能延迟，暂未找到 AC 时不会记录未通过，请稍后重试。</p>{% else %}<p>点击提交后查询完整历史记录。找到 AC 则记录为 Accepted（100 分），没有则记为未通过（0 分）。查询失败不会记为未通过。</p>{% endif %}
-<form method="post"><input type="hidden" name="csrf" value="{{ rmjCsrf }}"><button class="button primary" type="submit">提交 · 检测 {{ rmjPlatformName }} AC</button></form>
-{% else %}<p>请先验证绑定 {{ rmjPlatformName }} 账号。</p><a class="button primary" href="{{ url(rmjBindRoute) }}">绑定 {{ rmjPlatformName }}</a>{% endif %}
+<div class="row"><div class="columns"><div class="section"><div class="section__header"><h1 class="section__title">RMJ · 检测 CF AC</h1></div><div class="section__body typo">
+<p>{{ pdoc.title }} · <a href="{{ rmjUrl }}" target="_blank" rel="noopener noreferrer">CF 原题</a></p>
+{% if rmjAccount %}<p>当前绑定账号：<strong>{{ rmjAccount.handle }}</strong></p><p>点击提交后查询完整历史记录。找到 AC 则记录为 Accepted（100 分），没有则记为未通过（0 分）。查询失败不会记为未通过。</p>
+<form method="post"><input type="hidden" name="csrf" value="{{ rmjCsrf }}"><button class="button primary" type="submit">提交 · 检测 CF AC</button></form>
+{% else %}<p>请先验证绑定 CF 账号。</p><a class="button primary" href="{{ url('rmj_cf_bind') }}">绑定 CF</a>{% endif %}
 <p><a href="{{ url('problem_detail', pid=pdoc.docId) }}">返回题目</a></p>
 </div></div></div></div>{% endblock %}
