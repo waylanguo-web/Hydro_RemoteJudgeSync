@@ -19,12 +19,12 @@ addPage(new NamedPage('problem_config', () => {
     form.id = 'rmj-config-form';
     form.className = 'section__body';
     form.innerHTML = `<div class="row"><div class="medium-4 columns"><label>平台
-<select class="select" name="rmj-platform" style="width:100%"><option value="codeforces">CF · Codeforces</option></select>
+<select class="select" name="rmj-platform" style="width:100%;margin-top:12px"><option value="codeforces">CF · Codeforces</option></select>
 </label></div></div>
-<div class="row"><div class="medium-8 columns"><label>题目编号
-<input class="textbox" name="rmj-target" required placeholder="CF2276A、2276A 或粘贴原题链接" style="width:100%"></label>
+<div class="row" style="margin-top:36px"><div class="medium-8 columns"><label>题目编号
+<input class="textbox" name="rmj-target" required placeholder="CF2276A、2276A 或粘贴原题链接" style="width:100%;margin-top:12px"></label>
 <p data-rmj-preview style="margin:8px 0 16px;display:none">原题：<a target="_blank" rel="noopener noreferrer"></a></p></div></div>
-<div class="row"><div class="columns"><button type="submit" class="button rounded primary" data-rmj-save>保存</button>
+<div class="row" style="margin-top:36px"><div class="columns"><button type="submit" class="button rounded primary" data-rmj-save>保存</button>
 <p data-rmj-status role="status" style="display:none;margin-top:12px"></p></div></div>`;
     editor.before(form);
     const mode = switcher.querySelector('[name="rmj-mode"]');
