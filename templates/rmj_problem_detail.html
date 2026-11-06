@@ -1,9 +1,0 @@
-{% extends "layout/basic.html" %}{% block content %}
-<div class="row"><div class="medium-9 columns"><div class="section"><div class="section__header"><h1 class="section__title">{{ pdoc.pid or pdoc.docId }} · {{ pdoc.title }}</h1></div><div class="section__body typo">
-<p><strong>RMJ · Codeforces</strong>　{% if psdoc.status == 1 %}已通过{% endif %}</p>
-<p><a href="{{ rmjUrl }}" target="_blank" rel="noopener noreferrer">查看 CF 原题</a> · <a href="{{ url('record_main', query={pid:pdoc.docId}) }}">提交记录</a></p>
-{% include "partials/problem_description.html" %}
-<p>在 CF 提交后，返回此处检测。历史 AC 也有效，不需要上传代码。</p>
-<a class="button primary" href="{{ url('problem_submit', pid=pdoc.docId) }}">提交 · 检测 CF AC</a>
-{% if rmjCanEdit %}<a class="button" href="{{ url('problem_config', pid=pdoc.docId) }}">RMJ 配置</a><a class="button" href="{{ url('problem_edit', pid=pdoc.docId) }}">编辑题面</a>{% endif %}
-</div></div></div><div class="medium-3 columns">{% include "partials/problem_sidebar.html" %}</div></div>{% endblock %}

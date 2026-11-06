@@ -26,6 +26,10 @@ test('Hydro RMJ creates native records without local tasks, guards binding/CSRF/
  try {
  await require('../dist/rmj-hydro').installRmj({on:(n,f)=>hooks[n]=f,Route:()=>{}});
  assert.equal(hooks['handler/after/ProblemEdit#get'],undefined);
+ const detailPage={pdoc,args:{},response:{template:'problem_detail.html',body:{page_name:'problem_detail'}}};
+ hooks['handler/after/ProblemDetail#get'](detailPage);
+ assert.equal(detailPage.response.template,'problem_detail.html');
+ assert.equal(detailPage.response.body.page_name,'problem_detail');
  const configPage={pdoc,args:{},session:{},UiContext:{},response:{template:'problem_config.html'},url:()=>'/p/9/rmj'};
  hooks['handler/after/ProblemConfig#get'](configPage);
  assert.equal(configPage.response.template,'problem_config.html');

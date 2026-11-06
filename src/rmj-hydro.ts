@@ -56,9 +56,8 @@ export async function installRmj(ctx: any) {
     ctx.on('handler/after/ProblemDetail#get', (h: any) => {
         if (!isRmj(h)) return;
         rejectContest(h);
-        const p = parseCFProblem(h.pdoc.config.target || '');
-        h.response.body.rmjUrl = cfUrl(p); h.response.body.rmjCanEdit = editable(h, h.pdoc);
-        h.response.body.page_name = 'rmj_detail'; h.response.template = 'rmj_problem_detail.html';
+        // Keep Hydro's original detail template, page name, tags and sidebar unchanged.
+
     });
     ctx.on('handler/after/ProblemSubmit#get', async (h: any) => {
         if (!isRmj(h)) return;
