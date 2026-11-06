@@ -1,5 +1,5 @@
 import { saveChallenge, getChallenge, consumeChallenge } from './challenge-store';
-import { CodeforcesApi } from './providers/codeforces';
+import { codeforcesApi } from './providers/codeforces';
 import { CFBindingService, type BindingStore, type Challenge } from './services/cf-binding';
 declare const require: (name: string) => any;
 /** Hydro is supplied by the host; do not bundle a second Hydro runtime. */
@@ -21,7 +21,7 @@ export async function install(ctx: any) {
         },
         unlink: async uid => { await challenges.deleteMany({ uid }); await accounts.deleteOne({ _id: uid }); },
     };
-    const service = new CFBindingService(new CodeforcesApi(), store);
+    const service = new CFBindingService(codeforcesApi, store);
     const csrf = (h: any) => h.session.rmjCsrf ||= crypto.randomUUID();
     ctx.on('handler/after/HomeSettings#get', async (h: any) => {
         if (h.response.body.category !== 'account') return;

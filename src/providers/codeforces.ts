@@ -44,6 +44,19 @@ export class CodeforcesApi implements CFApi {
         this.cache = { rows, until: Date.now() + 3600000 };
         return rows;
     }
+    /** Scan history until exhausted; never report not accepted from an incomplete scan. */
+    async acceptance(handle: string, problem: CFProblem): Promise<CFSubmission | undefined> {
+        for (let from = 1; from <= 100000; from += 1000) {
+            const page = await this.call<CFSubmission[]>('user.status', { handle, from: String(from), count: '1000' });
+            const accepted = page.find(s => s.verdict === 'OK'
+                && s.problem.contestId === problem.contestId && s.problem.index === problem.index
+                && s.author.members.length === 1
+                && s.author.members[0].handle.toLowerCase() === handle.toLowerCase());
+            if (accepted) return accepted;
+            if (page.length < 1000) return undefined;
+        }
+        throw new Error('历史记录扫描尚未完成，请联系管理员；本次不会判为未通过。');
+    }
     async submissions(handle: string) {
         const rows: CFSubmission[] = [];
         for (let from = 1; from <= 10000; from += 1000) {
@@ -55,3 +68,5 @@ export class CodeforcesApi implements CFApi {
         throw new Error('提交记录过多，请稍后重试。');
     }
 }
+
+export const codeforcesApi = new CodeforcesApi();

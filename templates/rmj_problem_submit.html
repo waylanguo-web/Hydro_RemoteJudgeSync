@@ -1,0 +1,8 @@
+{% extends "layout/basic.html" %}{% block content %}
+<div class="row"><div class="columns"><div class="section"><div class="section__header"><h1 class="section__title">RMJ · 检测 CF AC</h1></div><div class="section__body typo">
+<p>{{ pdoc.title }} · <a href="{{ rmjUrl }}" target="_blank" rel="noopener noreferrer">CF 原题</a></p>
+{% if rmjAccount %}<p>当前绑定账号：<strong>{{ rmjAccount.handle }}</strong></p><p>点击提交后查询完整历史记录。找到 AC 则记录为 Accepted（100 分），没有则记为未通过（0 分）。查询失败不会记为未通过。</p>
+<form method="post"><input type="hidden" name="csrf" value="{{ rmjCsrf }}"><button class="button primary" type="submit">提交 · 检测 CF AC</button></form>
+{% else %}<p>请先验证绑定 CF 账号。</p><a class="button primary" href="{{ url('rmj_cf_bind') }}">绑定 CF</a>{% endif %}
+<p><a href="{{ url('problem_detail', pid=pdoc.docId) }}">返回题目</a></p>
+</div></div></div></div>{% endblock %}
