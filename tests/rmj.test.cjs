@@ -16,7 +16,7 @@ test('CF RMJ scans older pages and distinguishes API errors from no AC',async()=
  api.call=async()=>{throw Error('network');};await assert.rejects(api.acceptance('Alice',{contestId:4,index:'A'}),/network/);
 });
 test('Hydro RMJ creates native records without local tasks, guards binding/CSRF/contest and leaves ordinary submissions alone',async()=>{
- const original=Module._load,oldAcceptance=codeforcesApi.acceptance,oldAtCoder=atcoderSubmissionsApi.acceptance,oldAtCoderOfficial=atcoderOfficialApi.acceptance;const hooks={};let records=[],ends=[],incs=0;
+ const original=Module._load,oldAcceptance=codeforcesApi.acceptance,oldAtCoder=atcoderSubmissionsApi.acceptance,oldAtCoderOfficial=atcoderOfficialApi.acceptance,oldVerify=atcoderOfficialApi.verifyCredentials;const hooks={};let records=[],ends=[],incs=0,routes={};
  let account={handle:'Alice',handleKey:'alice',verifiedAt:new Date()};
  let atcAccount={handle:'AtcAlice',handleKey:'atcalice',verifiedAt:new Date()};
  const pdoc={docId:9,config:{type:'rmj',target:'4:A'}};
@@ -28,7 +28,11 @@ test('Hydro RMJ creates native records without local tasks, guards binding/CSRF/
  JudgeResultCallbackContext:{end:async(...args)=>ends.push(args)}};
  Module._load=function(n,...rest){if(n==='hydrooj')return host;if(n==='js-yaml')return {};return original.call(this,n,...rest);};
  try {
- await require('../dist/rmj-hydro').installRmj({setting:{requestConfig:()=>({rmj:{atcoder:{username:'judge',password:'secret'}}})},on:(n,f)=>hooks[n]=f,Route:()=>{}});
+ await require('../dist/rmj-hydro').installRmj({setting:{requestConfig:()=>({rmj:{atcoder:{username:'judge',password:'secret'}}})},on:(n,f)=>hooks[n]=f,Route:(n,p,h)=>{routes[n]=h}});
+ const manage={session:{},UiContext:{},url:()=>'/manage/rmj/atcoder/test'};hooks['handler/after/SystemConfig#get'](manage);
+ assert.equal(manage.UiContext.rmjAtcoderConfigTest.endpoint,'/manage/rmj/atcoder/test');
+ atcoderOfficialApi.verifyCredentials=async()=> 'judge';const tester=new routes.rmj_atcoder_config_test();Object.assign(tester,{session:{rmjConfigCsrf:'x'},response:{}});
+ await tester.post({csrf:'x'});assert.deepEqual(tester.response.body,{ok:true,username:'judge'});await assert.rejects(tester.post({csrf:'bad'}));
  assert.equal(hooks['handler/after/ProblemEdit#get'],undefined);
  const detailPage={pdoc,args:{},response:{template:'problem_detail.html',body:{page_name:'problem_detail'}}};
  hooks['handler/after/ProblemDetail#get'](detailPage);
@@ -59,5 +63,5 @@ test('Hydro RMJ creates native records without local tasks, guards binding/CSRF/
  assert.equal(await submit(make()),'after');assert.equal(ends.at(-1)[2].score,100);assert.match(records.at(-1)[4],/official authenticated/);
  atcoderOfficialApi.acceptance=async()=>undefined;await assert.rejects(submit(make()),/未检测到/);assert.equal(records.length,atcCount+1);
  atcAccount=null;await assert.rejects(submit(make()),/AtCoder/);
- }finally{Module._load=original;codeforcesApi.acceptance=oldAcceptance;atcoderSubmissionsApi.acceptance=oldAtCoder;atcoderOfficialApi.acceptance=oldAtCoderOfficial;}
+ }finally{Module._load=original;codeforcesApi.acceptance=oldAcceptance;atcoderSubmissionsApi.acceptance=oldAtCoder;atcoderOfficialApi.acceptance=oldAtCoderOfficial;atcoderOfficialApi.verifyCredentials=oldVerify;}
 });

@@ -23,6 +23,7 @@ export async function installRmj(ctx: any) {
         return platform;
     };
     const csrf = (h: any) => h.session.rmjCsrf ||= crypto.randomUUID();
+    const configCsrf = (h: any) => h.session.rmjConfigCsrf ||= crypto.randomUUID();
     const isRmj = (h: any) => h.pdoc?.config?.type === 'rmj';
     const rejectContest = (h: any) => { if (h.tdoc || h.args.tid) throw new Error('RMJ 初版仅支持日常练习，暂不支持比赛和作业。'); };
     const editable = (h: any, p: any) => h.user.own(p, PERM.PERM_EDIT_PROBLEM_SELF) || h.user.hasPerm(PERM.PERM_EDIT_PROBLEM);
@@ -62,7 +63,22 @@ export async function installRmj(ctx: any) {
             if (!this.request.json) this.response.redirect = this.url('problem_config', { pid: pdoc.docId });
         }
     }
+    class RmjAtCoderConfigTestHandler extends Handler {
+        async post(args: any) {
+            if (!args.csrf || args.csrf !== this.session.rmjConfigCsrf) throw new BadRequestError('请刷新配置页面后重试。');
+            try {
+                const username = await atcoderOfficialApi.verifyCredentials(rmjSettings.rmj.atcoder);
+                this.response.body = { ok: true, username };
+            } catch (e: any) {
+                throw new BadRequestError(e?.message || 'AtCoder 验证账号检测失败。');
+            }
+        }
+    }
     ctx.Route('rmj_config', '/p/:pid/rmj', RmjConfigHandler, PRIV.PRIV_USER_PROFILE);
+    ctx.Route('rmj_atcoder_config_test', '/manage/rmj/atcoder/test', RmjAtCoderConfigTestHandler, PRIV.PRIV_EDIT_SYSTEM);
+    ctx.on('handler/after/SystemConfig#get', (h: any) => {
+        h.UiContext.rmjAtcoderConfigTest = { csrf: configCsrf(h), endpoint: h.url('rmj_atcoder_config_test') };
+    });
     ctx.on('handler/after/ProblemConfig#get', (h: any) => {
         h.UiContext.rmjConfig = {
             type: h.pdoc.config?.type, platform: h.pdoc.config?.subType || 'codeforces',
@@ -106,8 +122,12 @@ export async function installRmj(ctx: any) {
             : await codeforcesApi.acceptance(account.handle, { contestId: p.contestId, index: p.index });
         let verificationSource = platform === 'atcoder' ? 'AtCoder Problems' : 'Codeforces API';
         if (platform === 'atcoder' && !remote) {
-            remote = await atcoderOfficialApi.acceptance(rmjSettings.rmj.atcoder, account.handle,
-                { contestId: p.contestId, taskId: p.taskId });
+            try {
+                remote = await atcoderOfficialApi.acceptance(rmjSettings.rmj.atcoder, account.handle,
+                    { contestId: p.contestId, taskId: p.taskId });
+            } catch (e: any) {
+                throw new BadRequestError(e?.message || 'AtCoder 官方查询失败，请稍后重试。');
+            }
             verificationSource = 'AtCoder official authenticated submissions';
         }
         if (platform === 'atcoder' && !remote) throw new BadRequestError('未检测到该绑定账号对此题的 AtCoder AC；本次不记录未通过。');

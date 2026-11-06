@@ -50,10 +50,18 @@ export class AtCoderOfficialApi {
         const response = await this.request('https://atcoder.jp/login?lang=en', {
             method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body,
         });
-        if (response.status < 300 || response.status >= 400 || !response.headers.get('location')) {
+        const location = response.headers.get('location') || '';
+        if (response.status < 300 || response.status >= 400 || !location
+            || new URL(location, 'https://atcoder.jp').pathname === '/login') {
             throw new Error('AtCoder 验证账号登录失败，请管理员检查全局配置中的用户名和密码。');
         }
         this.loggedInAs = username;
+    }
+
+    async verifyCredentials(credentials: AtCoderOfficialCredentials): Promise<string> {
+        this.cookies = ''; this.loggedInAs = '';
+        await this.login(credentials);
+        return this.loggedInAs;
     }
 
     private async submissions(handle: string, problem: { contestId: string; taskId: string }) {
