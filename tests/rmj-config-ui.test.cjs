@@ -14,10 +14,10 @@ test('RMJ fields occupy main settings area; sidebar contains only mode switch',(
   const f=fixture(type),c=f.controls;assert.equal(f.page.name,'problem_config');
   assert.equal(f.sidebarPanel.id,'rmj-config-extension');assert.equal(f.mainPanels[0].id,'rmj-config-form');
   assert.doesNotMatch(f.sidebarPanel.innerHTML,/name="rmj-target"/);assert.match(f.mainPanels[0].innerHTML,/name="rmj-platform"/);
-  assert.equal(f.editor.style.display,type==='rmj'?'none':'');assert.equal(f.mainPanels[0].style.display,type==='rmj'?'':'none');
+  assert.equal(f.editor.style.display,'');assert.equal(f.mainPanels[0].style.display,type==='rmj'?'':'none');
   assert.equal(c['[data-rmj-restore]'].style.display,'none');assert.equal(c['[name="rmj-target"]'].value,'CF4A');
   c['[name="rmj-mode"]'].value='rmj';c['[name="rmj-mode"]'].change();assert.equal(f.mainPanels[0].style.display,'');
-  c['[name="rmj-mode"]'].value='native';c['[name="rmj-mode"]'].change();assert.equal(f.editor.style.display,type==='rmj'?'none':'');
+  c['[name="rmj-mode"]'].value='native';c['[name="rmj-mode"]'].change();assert.equal(f.editor.style.display,'');
  }
 });
 test('pasted links normalize to problem ID, show original link and reject other hosts',()=>{

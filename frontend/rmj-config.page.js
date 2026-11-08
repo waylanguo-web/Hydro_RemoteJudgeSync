@@ -26,6 +26,11 @@ addPage(new NamedPage('problem_config', () => {
 <p data-rmj-preview style="margin:8px 0 16px;display:none">原题：<a target="_blank" rel="noopener noreferrer"></a></p></div></div>
 <div class="row" style="margin-top:36px"><div class="columns"><button type="submit" class="button rounded primary" data-rmj-save>保存</button>
 <p data-rmj-status role="status" style="display:none;margin-top:12px"></p></div></div>`;
+    if (typeof data.localStatus === "string") {
+        const hint = document.createElement("p");
+        hint.textContent = data.localStatus || "本地测试数据可用。";
+        form.append(hint);
+    }
     editor.before(form);
     const mode = switcher.querySelector('[name="rmj-mode"]');
     const restore = switcher.querySelector('[data-rmj-restore]');
@@ -58,7 +63,7 @@ addPage(new NamedPage('problem_config', () => {
     function update() {
         const rmj = mode.value === 'rmj';
         form.style.display = rmj ? '' : 'none';
-        editor.style.display = rmj || data.type === 'rmj' ? 'none' : '';
+        editor.style.display = rmj && data.type !== 'rmj' ? 'none' : '';
         restore.style.display = !rmj && data.type === 'rmj' ? '' : 'none';
         target.required = rmj;
         status.style.display = 'none';
