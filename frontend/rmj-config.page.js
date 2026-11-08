@@ -1,11 +1,6 @@
-import { addPage, NamedPage, request, Notification } from '@hydrooj/ui-default';
+import { addPage, NamedPage, request, Notification, loadMonaco } from '@hydrooj/ui-default';
 import { parseCFProblem, cfUrl, parseVJudgeProblem } from '../shared/cf-problem.js';
-// Keep RMJ options inside Hydro's config.yaml while extending the same schema
-// object consumed by Hydro's Monaco YAML validator.
-// @ts-ignore resolved by Hydro's frontend module alias
-import problemConfigSchema from 'vj/components/monaco/schema/problemconfig';
-
-problemConfigSchema.properties.rmj = {
+const rmjSchema = {
     type: 'object',
     properties: {
         enabled: { type: 'boolean' },
@@ -28,10 +23,17 @@ addPage(new NamedPage('problem_detail', () => {
     tags.insertBefore(label, tags.children[1] || null);
 }));
 
-addPage(new NamedPage('problem_config', () => {
+addPage(new NamedPage('problem_config', async () => {
     const data = window.UiContext.rmjConfig;
     const editor = document.getElementById('ProblemConfig');
     if (!data || !editor || document.getElementById('rmj-config-extension')) return;
+    const { monaco } = await loadMonaco(['yaml']);
+    const yamlDefaults = monaco.languages.yaml.yamlDefaults;
+    const diagnostics = yamlDefaults.getDiagnosticsOptions();
+    const schemas = (diagnostics.schemas || []).map(schema => schema.uri === 'https://hydro.js.org/schema/problemConfig.json'
+        ? { ...schema, schema: { ...schema.schema, properties: { ...schema.schema.properties, rmj: rmjSchema } } }
+        : schema);
+    yamlDefaults.setDiagnosticsOptions({ ...diagnostics, schemas });
     const form = document.createElement('form');
     form.id = 'rmj-config-form';
     form.className = 'section';
