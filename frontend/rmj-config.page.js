@@ -48,6 +48,7 @@ addPage(new NamedPage('problem_config', async () => {
         : '验证绑定账号的远程 AC；本地评测在下方单独配置和保存。';
     // Mount alongside Hydro's native panels after its async React editor loads.
     form.hidden = true;
+    form.style.display = 'none';
     const tab = document.createElement('button');
     tab.type = 'button';
     tab.id = 'rmj-config-tab';
@@ -60,19 +61,19 @@ addPage(new NamedPage('problem_config', async () => {
     let active = false;
     let root;
     const styling = document.createElement('style');
-    styling.textContent = '[data-rmj-active] > [role="tabpanel"]:not(#rmj-config-form){display:none!important}[data-rmj-active] [role="tab"][data-active]:not(#rmj-config-tab){border-color:transparent;color:inherit}[data-rmj-active] #rmj-config-tab{border-bottom:2px solid #228be6;color:#228be6}';
+    styling.textContent = '#rmj-config-form[hidden]{display:none!important}[data-rmj-active] > :not(:first-child):not(#rmj-config-form){display:none!important}[data-rmj-active] [role="tab"][data-active]:not(#rmj-config-tab){border-color:transparent;color:inherit}[data-rmj-active] #rmj-config-tab{border-bottom:2px solid #228be6;color:#228be6}';
     editor.append(styling);
     function select(value) {
         active = value;
         form.hidden = !value;
         tab.setAttribute('aria-selected', String(value));
-        if (value) root.setAttribute('data-rmj-active', '');
-        else root.removeAttribute('data-rmj-active');
+        if (value) { root.setAttribute('data-rmj-active', ''); form.style.display = 'block'; }
+        else { root.removeAttribute('data-rmj-active'); form.style.display = 'none'; }
     }
     function mount() {
         const list = editor.querySelector('[role="tablist"]');
         if (!list) return;
-        root = list.parentElement.parentElement;
+        root = list.closest('.mantine-Tabs-root') || list.parentElement.parentElement;
         const nativeTabs = Array.from(list.querySelectorAll('[role="tab"]')).filter(item => item !== tab);
         if (nativeTabs.length < 2) return;
         if (tab.parentElement !== list) {
