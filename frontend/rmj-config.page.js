@@ -48,7 +48,7 @@ addPage(new NamedPage('problem_config', async () => {
         : '验证绑定账号的远程 AC；本地评测在下方单独配置和保存。';
     // Mount alongside Hydro's native panels after its async React editor loads.
     form.hidden = true;
-    form.style.display = 'none';
+    form.style.setProperty('display', 'none', 'important');
     const tab = document.createElement('button');
     tab.type = 'button';
     tab.id = 'rmj-config-tab';
@@ -67,8 +67,15 @@ addPage(new NamedPage('problem_config', async () => {
         active = value;
         form.hidden = !value;
         tab.setAttribute('aria-selected', String(value));
-        if (value) { root.setAttribute('data-rmj-active', ''); form.style.display = 'block'; }
-        else { root.removeAttribute('data-rmj-active'); form.style.display = 'none'; }
+        form.style.setProperty('display', value ? 'block' : 'none', 'important');
+        for (const panel of root.querySelectorAll('[role="tabpanel"]')) {
+            if (panel !== form) {
+                if (value) panel.style.setProperty('display', 'none', 'important');
+                else panel.style.removeProperty('display');
+            }
+        }
+        if (value) root.setAttribute('data-rmj-active', '');
+        else root.removeAttribute('data-rmj-active');
     }
     function mount() {
         const list = editor.querySelector('[role="tablist"]');
