@@ -1,0 +1,13 @@
+{% extends "layout/basic.html" %}
+{% block content %}
+{{ set(UiContext, 'pdoc', pdoc) }}
+<div class="row">
+  <div class="medium-9 columns">
+    {% if rmjDual %}{% include "partials/rmj_submit_modes.html" %}{% endif %}
+    {% block rmj_submit_content %}{% endblock %}
+  </div>
+  <div class="medium-3 columns">
+    {% include "partials/problem_sidebar.html" %}
+  </div>
+</div>
+{% endblock %}

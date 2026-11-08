@@ -1,12 +1,5 @@
-{% extends "layout/basic.html" %}
-{% block content %}
-{{ set(UiContext, 'pdoc', pdoc) }}
-<div class="row">
-  <div class="medium-9 columns">
-    <nav class="section section__body" aria-label="评测方式">
-      <a class="button primary" href="?mode=local">本地评测</a>
-      <a class="button" href="?mode=remote">远程评测</a>
-    </nav>
+{% extends "rmj_submit_layout.html" %}
+{% block rmj_submit_content %}
     <div class="section">
       <div class="section__header">
         <h1 class="section__title">{{ _('Submit to Judge') }}</h1>
@@ -35,10 +28,4 @@
         </form>
       </div>
     </div>
-  </div>
-  <div class="medium-3 columns">
-    {% include "partials/problem_sidebar.html" %}
-  </div>
-</div>
-
 {% endblock %}
