@@ -17,7 +17,7 @@ test('Hydro RMJ creates native records without local tasks, guards binding/CSRF/
  const original=Module._load,oldAcceptance=codeforcesApi.acceptance;const hooks={};let records=[],ends=[],incs=0;
  let account={handle:'Alice',handleKey:'alice',verifiedAt:new Date()};
  const pdoc={domainId:'system',docId:9,data:[{name:'rmj.yaml'}],config:{type:'default'}};
- const host={storage:{get:async()=>require('node:stream').Readable.from([JSON.stringify({enabled:true,platform:'codeforces',target:'4:A'})])},Handler:class{},PRIV:{PRIV_USER_PROFILE:1},PERM:{PERM_EDIT_PROBLEM:2},STATUS:{STATUS_ACCEPTED:1,STATUS_WRONG_ANSWER:2},
+ const host={StorageModel:{get:async()=>require('node:stream').Readable.from([JSON.stringify({enabled:true,platform:'codeforces',target:'4:A'})])},Handler:class{},PRIV:{PRIV_USER_PROFILE:1},PERM:{PERM_EDIT_PROBLEM:2},STATUS:{STATUS_ACCEPTED:1,STATUS_WRONG_ANSWER:2},
  db:{collection:()=>({findOne:async()=>account})},
  ProblemModel:{get:async()=>pdoc,inc:async()=>incs++},DomainModel:{incUserInDomain:async()=>incs++},
  RecordModel:{add:async(...args)=>{records.push(args);return 'rid';},update:async()=>{}},
@@ -50,3 +50,4 @@ test('Hydro RMJ creates native records without local tasks, guards binding/CSRF/
  assert.equal(await submit({...make(),pdoc:{config:{type:'default'}}}),undefined);
  }finally{Module._load=original;codeforcesApi.acceptance=oldAcceptance;}
 });
+

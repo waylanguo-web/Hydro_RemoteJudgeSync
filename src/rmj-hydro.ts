@@ -6,7 +6,7 @@ import { vjudgeApi } from './providers/vjudge';
 declare const require: (name: string) => any;
 export async function installRmj(ctx: any) {
     const { Handler, PRIV, PERM, STATUS, db, ProblemModel, RecordModel, DomainModel,
-        JudgeResultCallbackContext, storage } = require('hydrooj');
+        JudgeResultCallbackContext, StorageModel: storage } = require('hydrooj');
     const { Buffer } = require('buffer');
     const yaml = require('js-yaml');
     const accounts = db.collection('rmj.cf.accounts');
@@ -196,3 +196,4 @@ export async function installRmj(ctx: any) {
         for await (const raw of legacy) await convertLegacy(raw);
     }
 }
+
