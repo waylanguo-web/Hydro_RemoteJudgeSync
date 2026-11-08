@@ -45,9 +45,16 @@ export async function installRmj(ctx: any) {
         await db.collection('rmj.local.backups').updateOne({ _id: raw._id }, {
             $setOnInsert: { domainId: raw.domainId, pid: raw.docId, config: raw.config, date: new Date() },
         }, { upsert: true });
+        const localType = config.type === 'rmj' ? (config.localType || 'default') : (config.type || 'default');
         config.rmj = { enabled: true, platform: target.platform || 'codeforces', target: target.target };
-        if (config.type === 'rmj') config.type = 'default';
+        const status = await localStatus({ ...raw, config: { ...config, type: localType } }, yaml,
+            require('@hydrooj/common'), require('@hydrooj/common/cases').readYamlCases);
+        if (status) {
+            config.rmj.localType = localType;
+            config.type = 'remote_judge';
+        } else config.type = localType;
         delete config.rmjTarget;
+        delete config.localType;
         delete config.subType;
         delete config.target;
         await saveConfig(raw.domainId, raw.docId, raw.owner, config);
@@ -81,8 +88,9 @@ export async function installRmj(ctx: any) {
                     config.type = 'remote_judge';
                 }
             } else {
+                const localType = config.rmj?.localType || 'default';
                 delete config.rmj;
-                if (config.type === 'remote_judge') config.type = config.rmj?.localType || 'default';
+                if (config.type === 'remote_judge') config.type = localType;
             }
             await saveConfig(args.domainId, pdoc.docId, this.user._id, config);
             this.response.body = { ok: true };
@@ -90,6 +98,16 @@ export async function installRmj(ctx: any) {
         }
     }
     ctx.Route('rmj_config', '/p/:pid/rmj', RmjConfigHandler, PRIV.PRIV_USER_PROFILE);
+    ctx.on('handler/after/ProblemFiles#post', async (h: any) => {
+        const existing = remoteTarget(h.pdoc);
+        if (!existing || h.args.operation !== 'upload_file' || h.args.filename !== 'config.yaml') return;
+        const raw = await ProblemModel.get(h.args.domainId, h.pdoc.docId, undefined, true);
+        const config = typeof raw.config === 'string' ? yaml.load(raw.config || '{}') || {} : { ...(raw.config || {}) };
+        config.rmj = { enabled: true, platform: existing.platform, target: existing.target };
+        if (config.type === 'remote_judge') config.rmj.localType = h.pdoc.config.rmj?.localType || 'default';
+        else delete config.rmj.localType;
+        await saveConfig(raw.domainId, raw.docId, h.user._id, config);
+    });
     ctx.on('handler/after/ProblemConfig#get', async (h: any) => {
         const type = isRmj(h) ? (h.pdoc.config.type === 'remoteJudge' ? 'remoteJudge' : h.pdoc.config.type) : h.pdoc.config?.type;
         h.UiContext.rmjConfig = {

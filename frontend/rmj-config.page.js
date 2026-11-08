@@ -16,35 +16,30 @@ addPage(new NamedPage('problem_config', () => {
     const data = window.UiContext.rmjConfig;
     const editor = document.getElementById('ProblemConfig');
     if (!data || !editor || document.getElementById('rmj-config-extension')) return;
-    const switcher = document.createElement('div');
-    switcher.id = 'rmj-config-extension';
-    switcher.className = 'section side';
-    switcher.innerHTML = `<div class="section__header"><h1 class="section__title">评测方式</h1></div>
-<div class="section__body"><select class="select" name="rmj-mode" aria-label="评测方式" style="width:100%">
-<option value="native">本地评测（原生设置）</option><option value="rmj">remoteJudge · 远程评测</option>
-</select><button type="button" class="button" data-rmj-restore style="display:none;margin-top:12px">保存并切换为本地评测</button></div>`;
-    const sidebar = editor.closest('.row')?.querySelector('.medium-3.columns');
-    if (sidebar) sidebar.prepend(switcher);
-    else editor.before(switcher);
     const form = document.createElement('form');
     form.id = 'rmj-config-form';
-    form.className = 'section__body';
-    form.innerHTML = `<div class="row"><div class="medium-4 columns"><label>平台
+    form.className = 'section';
+    form.innerHTML = `<div class="section__header"><h2 class="section__title">评测配置</h2></div><div class="section__body">
+<div class="row"><div class="medium-4 columns"><label>评测方式
+<select class="select" name="rmj-mode" aria-label="评测方式" style="width:100%;margin-top:12px"><option value="native">仅本地评测</option><option value="rmj">启用 remoteJudge</option></select>
+</label></div></div>
+<div data-rmj-options><div class="row" style="margin-top:24px"><div class="medium-4 columns"><label>远程平台
 <select class="select" name="rmj-platform" style="width:100%;margin-top:12px"><option value="codeforces">CF · Codeforces</option><option value="vjudge">VJudge</option></select>
 </label></div></div>
 <div class="row" style="margin-top:36px"><div class="medium-8 columns"><label>题目编号
 <input class="textbox" name="rmj-target" required placeholder="CF2276A、2276A 或粘贴原题链接" style="width:100%;margin-top:12px"></label>
 <p data-rmj-preview style="margin:8px 0 16px;display:none">原题：<a target="_blank" rel="noopener noreferrer"></a></p></div></div>
-<div class="row" style="margin-top:36px"><div class="columns"><button type="submit" class="button rounded primary" data-rmj-save>保存</button>
-<p data-rmj-status role="status" style="display:none;margin-top:12px"></p></div></div>`;
+<p data-rmj-status role="status" style="display:none;margin:12px 0"></p></div>
+<div class="row"><div class="columns"><button type="submit" class="button rounded primary" data-rmj-save>保存评测配置</button>
+</div></div></div>`;
     if (typeof data.localStatus === "string") {
         const hint = document.createElement("p");
         hint.textContent = data.localStatus || "本地测试数据可用。";
         form.append(hint);
     }
     editor.before(form);
-    const mode = switcher.querySelector('[name="rmj-mode"]');
-    const restore = switcher.querySelector('[data-rmj-restore]');
+    const mode = form.querySelector('[name="rmj-mode"]');
+    const options = form.querySelector('[data-rmj-options]');
     const platform = form.querySelector('[name="rmj-platform"]');
     const target = form.querySelector('[name="rmj-target"]');
     const save = form.querySelector('[data-rmj-save]');
@@ -73,24 +68,24 @@ addPage(new NamedPage('problem_config', () => {
     }
     function update() {
         const rmj = mode.value === 'rmj';
-        form.style.display = rmj ? '' : 'none';
+        options.style.display = rmj ? '' : 'none';
         editor.style.display = rmj && data.type === 'remoteJudge' ? 'none' : '';
-        restore.style.display = !rmj && data.enabled ? '' : 'none';
         target.required = rmj;
         status.style.display = 'none';
     }
-    async function persist(native = false) {
-        if (!native && (!extract(true) || !target.reportValidity())) return;
-        save.disabled = restore.disabled = true;
+    async function persist() {
+        const enabled = mode.value === 'rmj';
+        if (enabled && (!extract(true) || !target.reportValidity())) return;
+        save.disabled = true;
         try {
-            await request.post(data.endpoint, { csrf: data.csrf, mode: native ? 'default' : 'rmj', platform: platform.value, target: target.value });
+            await request.post(data.endpoint, { csrf: data.csrf, mode: enabled ? 'rmj' : 'default', platform: platform.value, target: target.value });
             Notification.success('评测设置已保存');
             window.location.reload();
         } catch (e) {
             status.textContent = e.message || '保存失败，请稍后重试。';
             status.style.display = '';
             Notification.error(status.textContent);
-            save.disabled = restore.disabled = false;
+            save.disabled = false;
         }
     }
     mode.addEventListener('change', update);
@@ -101,7 +96,6 @@ addPage(new NamedPage('problem_config', () => {
     target.addEventListener('blur', () => extract());
     target.addEventListener('paste', () => setTimeout(() => extract(true), 0));
     form.addEventListener('submit', e => { e.preventDefault(); persist(); });
-    restore.addEventListener('click', () => persist(true));
     updatePlatform();
     update();
 }));
