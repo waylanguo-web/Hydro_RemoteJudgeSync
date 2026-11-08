@@ -27,10 +27,10 @@ export async function installRmj(ctx: any) {
         if (p.reference) throw new Error('请在原题所在域配置 RMJ，暂不支持引用题。');
         return p;
     };
-    const projection = ProblemModel.PROJECTION_PUBLIC;
-    if (projection && !projection.includes('rmjTarget')) {
-        projection.push('rmjTarget');
-        ctx.on('dispose', () => { const i = projection.indexOf('rmjTarget'); if (i >= 0) projection.splice(i, 1); });
+    async function saveConfig(domainId: string, docId: number, owner: number, config: any) {
+        const serialized = yaml.dump(config);
+        await ProblemModel.addTestdata(domainId, docId, 'config.yaml', Buffer.from(serialized), owner);
+        await ProblemModel.edit(domainId, docId, { config: serialized });
     }
     async function availability(doc: any) {
         const raw = await ProblemModel.get(doc.domainId, doc.docId, undefined, true);
@@ -39,17 +39,19 @@ export async function installRmj(ctx: any) {
     }
     async function convertLegacy(raw: any) {
         const config = typeof raw.config === 'string' ? yaml.load(raw.config) : raw.config;
-        if (config?.type !== 'rmj') return;
+        const target = config?.rmjTarget || (config?.type === 'rmj'
+            ? { platform: config.subType || 'codeforces', target: config.target } : null);
+        if (!target) return;
         await db.collection('rmj.local.backups').updateOne({ _id: raw._id }, {
             $setOnInsert: { domainId: raw.domainId, pid: raw.docId, config: raw.config, date: new Date() },
         }, { upsert: true });
-        await ProblemModel.edit(raw.domainId, raw.docId, { rmjTarget: remoteTarget({ config }) });
-        config.type = 'default';
+        config.rmj = { enabled: true, platform: target.platform || 'codeforces', target: target.target };
+        if (config.type === 'rmj') config.type = 'default';
+        delete config.rmjTarget;
         delete config.subType;
         delete config.target;
-        const serialized = yaml.dump(config);
-        await ProblemModel.addTestdata(raw.domainId, raw.docId, 'config.yaml', Buffer.from(serialized), raw.owner);
-        await ProblemModel.edit(raw.domainId, raw.docId, { config: serialized });
+        await saveConfig(raw.domainId, raw.docId, raw.owner, config);
+        await db.collection('document').updateOne({ _id: raw._id }, { $unset: { rmjTarget: '' } });
     }
     class RmjConfigHandler extends Handler {
         async get() {
@@ -62,19 +64,36 @@ export async function installRmj(ctx: any) {
             if (!['rmj', 'default'].includes(args.mode)) throw new Error('请选择有效的题型。');
             const platform = args.platform || 'codeforces';
             if (!['codeforces', 'vjudge'].includes(platform)) throw new Error('不支持该平台。');
-            const target: any = args.mode === 'rmj' ? (platform === 'vjudge' ? parseVJudgeProblem(String(args.target || '')) : parseCFProblem(String(args.target || ''))) : null;
             const raw = await ProblemModel.get(args.domainId, pdoc.docId, undefined, true);
             await convertLegacy(raw);
-            const rmjTarget = target ? { platform, target: platform === 'vjudge' ? target.target : `${target.contestId}:${target.index}` } : null;
-            await ProblemModel.edit(args.domainId, pdoc.docId, { rmjTarget });
+            const config = typeof raw.config === 'string' ? yaml.load(raw.config || '{}') || {} : { ...(raw.config || {}) };
+            if (args.mode === 'rmj') {
+                const target: any = platform === 'vjudge' ? parseVJudgeProblem(String(args.target || '')) : parseCFProblem(String(args.target || ''));
+                config.rmj = { enabled: true, platform, target: platform === 'vjudge' ? target.target : `${target.contestId}:${target.index}` };
+                const files = raw.data || [];
+                const localType = config.type === 'remote_judge' ? (config.rmj.localType || 'default') : (config.type || 'default');
+                const hasFiles = files.some((f: any) => f.name !== 'config.yaml');
+                if (hasFiles) {
+                    config.type = localType;
+                    delete config.rmj.localType;
+                } else {
+                    config.rmj.localType = localType;
+                    config.type = 'remote_judge';
+                }
+            } else {
+                delete config.rmj;
+                if (config.type === 'remote_judge') config.type = config.rmj?.localType || 'default';
+            }
+            await saveConfig(args.domainId, pdoc.docId, this.user._id, config);
             this.response.body = { ok: true };
             if (!this.request.json) this.response.redirect = this.url('problem_config', { pid: pdoc.docId });
         }
     }
     ctx.Route('rmj_config', '/p/:pid/rmj', RmjConfigHandler, PRIV.PRIV_USER_PROFILE);
     ctx.on('handler/after/ProblemConfig#get', async (h: any) => {
+        const type = isRmj(h) ? (h.pdoc.config.type === 'remoteJudge' ? 'remoteJudge' : h.pdoc.config.type) : h.pdoc.config?.type;
         h.UiContext.rmjConfig = {
-            type: isRmj(h) ? 'rmj' : h.pdoc.config?.type, platform: remoteTarget(h.pdoc)?.platform || 'codeforces',
+            type, enabled: !!remoteTarget(h.pdoc), platform: remoteTarget(h.pdoc)?.platform || 'codeforces',
             target: remoteTarget(h.pdoc)?.target || '', problemId: h.pdoc.pid || '', csrf: csrf(h),
             endpoint: h.url('rmj_config', { pid: h.pdoc.docId }),
         };
@@ -83,8 +102,8 @@ export async function installRmj(ctx: any) {
     ctx.on('handler/after/ProblemDetail#get', (h: any) => {
         if (!isRmj(h)) return;
         rejectContest(h);
-        // Keep Hydro's original detail template, page name, tags and sidebar unchanged.
-
+        h.UiContext ||= {};
+        h.UiContext.rmjHybrid = h.pdoc.config.type !== 'remote_judge';
     });
     ctx.on('handler/after/ProblemSubmit#get', async (h: any) => {
         if (!isRmj(h)) return;
@@ -171,7 +190,9 @@ export async function installRmj(ctx: any) {
     });
     const documents = db.collection('document');
     if (documents.find) {
-        const legacy = documents.find({ docType: 10, config: /^type:\s*rmj\s*$/m });
+        const legacy = documents.find({ docType: 10, $or: [
+            { config: /^type:\s*rmj\s*$/m }, { rmjTarget: { $exists: true } },
+        ] });
         for await (const raw of legacy) await convertLegacy(raw);
     }
 }

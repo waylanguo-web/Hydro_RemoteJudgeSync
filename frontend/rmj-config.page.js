@@ -1,6 +1,17 @@
 import { addPage, NamedPage, request, Notification } from '@hydrooj/ui-default';
 import { parseCFProblem, cfUrl, parseVJudgeProblem } from '../shared/cf-problem.js';
 
+addPage(new NamedPage('problem_detail', () => {
+    if (!window.UiContext.rmjHybrid) return;
+    const tags = document.querySelector('.problem__tags');
+    if (!tags || tags.querySelector('[data-rmj-type]')) return;
+    const label = document.createElement('span');
+    label.className = 'problem__tag-item icon icon-book';
+    label.dataset.rmjType = 'true';
+    label.textContent = 'remoteJudge';
+    tags.insertBefore(label, tags.children[1] || null);
+}));
+
 addPage(new NamedPage('problem_config', () => {
     const data = window.UiContext.rmjConfig;
     const editor = document.getElementById('ProblemConfig');
@@ -10,7 +21,7 @@ addPage(new NamedPage('problem_config', () => {
     switcher.className = 'section side';
     switcher.innerHTML = `<div class="section__header"><h1 class="section__title">评测方式</h1></div>
 <div class="section__body"><select class="select" name="rmj-mode" aria-label="评测方式" style="width:100%">
-<option value="native">本地评测（原生设置）</option><option value="rmj">RMJ · 远程 AC 验证</option>
+<option value="native">本地评测（原生设置）</option><option value="rmj">remoteJudge · 远程评测</option>
 </select><button type="button" class="button" data-rmj-restore style="display:none;margin-top:12px">保存并切换为本地评测</button></div>`;
     const sidebar = editor.closest('.row')?.querySelector('.medium-3.columns');
     if (sidebar) sidebar.prepend(switcher);
@@ -40,9 +51,9 @@ addPage(new NamedPage('problem_config', () => {
     const status = form.querySelector('[data-rmj-status]');
     const preview = form.querySelector('[data-rmj-preview]');
     const link = preview.querySelector('a');
-    mode.value = data.type === 'rmj' ? 'rmj' : 'native';
+    mode.value = data.enabled ? 'rmj' : 'native';
     platform.value = data.platform === 'vjudge' ? 'vjudge' : 'codeforces';
-    target.value = data.target || (data.type === 'rmj' && /^CF[1-9][0-9]*[A-Z][0-9]?$/i.test(data.problemId || '') ? data.problemId : '');
+    target.value = data.target || (data.enabled && /^CF[1-9][0-9]*[A-Z][0-9]?$/i.test(data.problemId || '') ? data.problemId : '');
     function extract(showError = false) {
         target.setCustomValidity('');
         status.style.display = 'none';
@@ -63,8 +74,8 @@ addPage(new NamedPage('problem_config', () => {
     function update() {
         const rmj = mode.value === 'rmj';
         form.style.display = rmj ? '' : 'none';
-        editor.style.display = rmj && data.type !== 'rmj' ? 'none' : '';
-        restore.style.display = !rmj && data.type === 'rmj' ? '' : 'none';
+        editor.style.display = rmj && data.type === 'remoteJudge' ? 'none' : '';
+        restore.style.display = !rmj && data.enabled ? '' : 'none';
         target.required = rmj;
         status.style.display = 'none';
     }

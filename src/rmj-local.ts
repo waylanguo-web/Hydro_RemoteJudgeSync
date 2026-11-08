@@ -1,5 +1,5 @@
 export function remoteTarget(doc: any) {
-    return doc?.rmjTarget || (doc?.config?.type === 'rmj'
+    return doc?.config?.rmj?.enabled ? doc.config.rmj : doc?.rmjTarget || (doc?.config?.type === 'rmj'
         ? { platform: doc.config.subType || 'codeforces', target: doc.config.target }
         : null);
 }
