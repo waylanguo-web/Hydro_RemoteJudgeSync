@@ -1,17 +1,5 @@
-import { addPage, NamedPage, request, Notification, loadMonaco } from '@hydrooj/ui-default';
+import { addPage, NamedPage, request, Notification } from '@hydrooj/ui-default';
 import { parseCFProblem, cfUrl, parseVJudgeProblem } from '../shared/cf-problem.js';
-const rmjSchema = {
-    type: 'object',
-    properties: {
-        enabled: { type: 'boolean' },
-        platform: { enum: ['codeforces', 'vjudge'] },
-        target: { type: 'string', minLength: 1 },
-        localType: { type: 'string' },
-    },
-    required: ['enabled', 'platform', 'target'],
-    additionalProperties: false,
-};
-
 addPage(new NamedPage('problem_detail', () => {
     if (!window.UiContext.rmjHybrid) return;
     const tags = document.querySelector('.problem__tags');
@@ -19,21 +7,14 @@ addPage(new NamedPage('problem_detail', () => {
     const label = document.createElement('span');
     label.className = 'problem__tag-item icon icon-book';
     label.dataset.rmjType = 'true';
-    label.textContent = 'remoteJudge';
+    label.textContent = 'RMJ';
     tags.insertBefore(label, tags.children[1] || null);
 }));
 
 addPage(new NamedPage('problem_config', async () => {
     const data = window.UiContext.rmjConfig;
     const editor = document.getElementById('ProblemConfig');
-    if (!data || !editor || document.getElementById('rmj-config-extension')) return;
-    const { monaco } = await loadMonaco(['yaml']);
-    const yamlDefaults = monaco.languages.yaml.yamlDefaults;
-    const diagnostics = yamlDefaults.getDiagnosticsOptions();
-    const schemas = (diagnostics.schemas || []).map(schema => schema.uri === 'https://hydro.js.org/schema/problemConfig.json'
-        ? { ...schema, schema: { ...schema.schema, properties: { ...schema.schema.properties, rmj: rmjSchema } } }
-        : schema);
-    yamlDefaults.setDiagnosticsOptions({ ...diagnostics, schemas });
+    if (!data || !editor || document.getElementById('rmj-config-form')) return;
     const form = document.createElement('form');
     form.id = 'rmj-config-form';
     form.className = 'section';
@@ -87,7 +68,7 @@ addPage(new NamedPage('problem_config', async () => {
     function update() {
         const rmj = mode.value === 'rmj';
         options.style.display = rmj ? '' : 'none';
-        editor.style.display = rmj && data.type === 'remoteJudge' ? 'none' : '';
+        editor.style.display = '';
         target.required = rmj;
         status.style.display = 'none';
     }

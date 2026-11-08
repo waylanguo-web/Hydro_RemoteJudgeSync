@@ -1,11 +1,9 @@
 export function remoteTarget(doc: any) {
-    return doc?.config?.rmj?.enabled ? doc.config.rmj : doc?.rmjTarget || (doc?.config?.type === 'rmj'
-        ? { platform: doc.config.subType || 'codeforces', target: doc.config.target }
-        : null);
+    return doc?.rmjConfig?.enabled === true ? doc.rmjConfig : null;
 }
 
 export async function localStatus(doc: any, yaml: any, common: any, readYamlCases: any) {
-    const names = (doc.data || []).map((file: any) => file.name);
+    const names = (doc.data || []).map((file: any) => file.name).filter((name: string) => !['rmj.yaml', 'config.yaml', 'config.yml'].includes(name));
     try {
         const cfg = typeof doc.config === 'string' ? yaml.load(doc.config) || {} : { ...doc.config };
         if (cfg.type === 'rmj') return '旧题配置需要转换，请在评测设置中保存一次。';

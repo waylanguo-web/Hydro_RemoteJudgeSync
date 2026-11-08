@@ -2,10 +2,10 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { localStatus, remoteTarget } = require('../dist/rmj-local');
 
-test('remote targets coexist with native settings and legacy targets remain readable', () => {
-    const target = { platform: 'vjudge', target: '洛谷-P1003' };
-    assert.equal(remoteTarget({ rmjTarget: target, config: { type: 'default' } }), target);
-    assert.deepEqual(remoteTarget({ config: { type: 'rmj', target: '4:A' } }), { platform: 'codeforces', target: '4:A' });
+test('remote targets use independent configuration only', () => {
+    const target = { enabled: true, platform: 'vjudge', target: '洛谷-P1003' };
+    assert.equal(remoteTarget({ rmjConfig: target, config: { type: 'default' } }), target);
+    assert.equal(remoteTarget({ config: { type: 'rmj', target: '4:A' } }), null);
     assert.equal(remoteTarget({ config: { type: 'default' } }), null);
 });
 

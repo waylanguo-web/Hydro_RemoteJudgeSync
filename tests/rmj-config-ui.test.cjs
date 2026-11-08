@@ -9,15 +9,15 @@ async function fixture(type,target='4:A',problemId='') {
  const schema={uri:'https://hydro.js.org/schema/problemConfig.json',schema:{properties:{type:{enum:['default']}}}};
  const yamlDefaults={options:{schemas:[schema]},getDiagnosticsOptions(){return this.options;},setDiagnosticsOptions(value){this.options=value;}};
  vm.runInNewContext(src,{window:{UiContext:{rmjConfig:{type:type==='rmj'?'remoteJudge':type,enabled:type==='rmj',target,problemId}}},document,parseCFProblem,cfUrl,setTimeout:f=>f(),loadMonaco:async()=>({monaco:{languages:{yaml:{yamlDefaults}}}}),addPage:p=>page=p,NamedPage:class{constructor(name,run){this.name=name;this.run=run;}}});await page.run();
- assert.equal(Array.from(yamlDefaults.options.schemas[0].schema.properties.rmj.required).join(','),'enabled,platform,target');
+ assert.equal(yamlDefaults.options.schemas[0].schema.properties.rmj,undefined);
  return {page,sidebarPanel,mainPanels,editor,controls};
 }
-test('RMJ schema extends Hydro YAML validation and settings stay in the main evaluation configuration',async()=>{
+test('RMJ settings leave Hydro YAML validation and native editor intact',async()=>{
  for(const type of ['default','interactive','rmj']){
   const f=await fixture(type),c=f.controls;assert.equal(f.page.name,'problem_config');
   assert.equal(f.sidebarPanel,undefined);assert.equal(f.mainPanels[0].id,'rmj-config-form');
   assert.match(f.mainPanels[0].innerHTML,/name="rmj-platform"/);
-  assert.equal(f.editor.style.display,type==='rmj'?'none':'');assert.equal(c['[data-rmj-options]'].style.display,type==='rmj'?'':'none');
+  assert.equal(f.editor.style.display,'');assert.equal(c['[data-rmj-options]'].style.display,type==='rmj'?'':'none');
   assert.equal(c['[name="rmj-target"]'].value,'CF4A');
   c['[name="rmj-mode"]'].value='rmj';c['[name="rmj-mode"]'].change();assert.equal(c['[data-rmj-options]'].style.display,'');
   c['[name="rmj-mode"]'].value='native';c['[name="rmj-mode"]'].change();assert.equal(f.editor.style.display,'');

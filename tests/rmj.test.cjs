@@ -16,22 +16,25 @@ test('CF RMJ scans older pages and distinguishes API errors from no AC',async()=
 test('Hydro RMJ creates native records without local tasks, guards binding/CSRF/contest and leaves ordinary submissions alone',async()=>{
  const original=Module._load,oldAcceptance=codeforcesApi.acceptance;const hooks={};let records=[],ends=[],incs=0;
  let account={handle:'Alice',handleKey:'alice',verifiedAt:new Date()};
- const pdoc={docId:9,config:{type:'rmj',target:'4:A'}};
- const host={Handler:class{},PRIV:{PRIV_USER_PROFILE:1},PERM:{PERM_EDIT_PROBLEM:2},STATUS:{STATUS_ACCEPTED:1,STATUS_WRONG_ANSWER:2},
+ const pdoc={domainId:'system',docId:9,data:[{name:'rmj.yaml'}],config:{type:'default'}};
+ const host={storage:{get:async()=>require('node:stream').Readable.from([JSON.stringify({enabled:true,platform:'codeforces',target:'4:A'})])},Handler:class{},PRIV:{PRIV_USER_PROFILE:1},PERM:{PERM_EDIT_PROBLEM:2},STATUS:{STATUS_ACCEPTED:1,STATUS_WRONG_ANSWER:2},
  db:{collection:()=>({findOne:async()=>account})},
  ProblemModel:{get:async()=>pdoc,inc:async()=>incs++},DomainModel:{incUserInDomain:async()=>incs++},
  RecordModel:{add:async(...args)=>{records.push(args);return 'rid';},update:async()=>{}},
  JudgeResultCallbackContext:{end:async(...args)=>ends.push(args)}};
- Module._load=function(n,...rest){if(n==='hydrooj')return host;if(n==='js-yaml')return {};return original.call(this,n,...rest);};
+ Module._load=function(n,...rest){if(n==='hydrooj')return host;if(n==='js-yaml')return {load:JSON.parse};if(n==='@hydrooj/common')return {readSubtasksFromFiles:()=>[]};if(n==='@hydrooj/common/cases')return {readYamlCases:async x=>x};return original.call(this,n,...rest);};
  try {
  await require('../dist/rmj-hydro').installRmj({on:(n,f)=>hooks[n]=f,Route:()=>{}});
  assert.equal(hooks['handler/after/ProblemEdit#get'],undefined);
  const detailPage={pdoc,args:{},response:{template:'problem_detail.html',body:{page_name:'problem_detail'}}};
- hooks['handler/after/ProblemDetail#get'](detailPage);
+ await hooks['handler/after/ProblemDetail#get'](detailPage);
+ assert.equal(detailPage.UiContext.rmjHybrid,true);
  assert.equal(detailPage.response.template,'problem_detail.html');
  assert.equal(detailPage.response.body.page_name,'problem_detail');
+ const missing={pdoc:{config:{type:'default'},data:[]},args:{},UiContext:{}};
+ await hooks['handler/after/ProblemDetail#get'](missing);assert.equal(missing.UiContext.rmjHybrid,undefined);
  const configPage={pdoc,args:{},session:{},UiContext:{},response:{template:'problem_config.html'},url:()=>'/p/9/rmj'};
- hooks['handler/after/ProblemConfig#get'](configPage);
+ await hooks['handler/after/ProblemConfig#get'](configPage);
  assert.equal(configPage.response.template,'problem_config.html');
  assert.equal(configPage.UiContext.rmjConfig.target,'4:A');
  assert.ok(configPage.UiContext.rmjConfig.csrf);
