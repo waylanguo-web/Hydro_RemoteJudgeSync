@@ -39,7 +39,7 @@ export async function installRmj(ctx: any) {
     }
     async function convertLegacy(raw: any) {
         const config = typeof raw.config === 'string' ? yaml.load(raw.config) : raw.config;
-        const target = config?.rmjTarget || (config?.type === 'rmj'
+        const target = raw.rmjTarget || config?.rmjTarget || (config?.type === 'rmj'
             ? { platform: config.subType || 'codeforces', target: config.target } : null);
         if (!target) return;
         await db.collection('rmj.local.backups').updateOne({ _id: raw._id }, {
