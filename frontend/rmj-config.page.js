@@ -1,5 +1,21 @@
 import { addPage, NamedPage, request, Notification } from '@hydrooj/ui-default';
 import { parseCFProblem, cfUrl, parseVJudgeProblem } from '../shared/cf-problem.js';
+// Keep RMJ options inside Hydro's config.yaml while extending the same schema
+// object consumed by Hydro's Monaco YAML validator.
+// @ts-ignore resolved by Hydro's frontend module alias
+import problemConfigSchema from 'vj/components/monaco/schema/problemconfig';
+
+problemConfigSchema.properties.rmj = {
+    type: 'object',
+    properties: {
+        enabled: { type: 'boolean' },
+        platform: { enum: ['codeforces', 'vjudge'] },
+        target: { type: 'string', minLength: 1 },
+        localType: { type: 'string' },
+    },
+    required: ['enabled', 'platform', 'target'],
+    additionalProperties: false,
+};
 
 addPage(new NamedPage('problem_detail', () => {
     if (!window.UiContext.rmjHybrid) return;

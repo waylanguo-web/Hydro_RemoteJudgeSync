@@ -6,7 +6,9 @@ function fixture(type,target='4:A',problemId='') {
  const sidebar={prepend:p=>sidebarPanel=p};const editor={style:{},before:p=>mainPanels.push(p),closest:()=>({querySelector:()=>sidebar})};
  const document={getElementById:id=>id==='ProblemConfig'?editor:null,createElement:()=>({style:{},querySelector:k=>controls[k],addEventListener(n,f){this[n]=f;}})};
  const src=fs.readFileSync(require('node:path').join(__dirname,'../frontend/rmj-config.page.js'),'utf8').replace(/^import .*;\s*/gm,'');
- vm.runInNewContext(src,{window:{UiContext:{rmjConfig:{type:type==='rmj'?'remoteJudge':type,enabled:type==='rmj',target,problemId}}},document,parseCFProblem,cfUrl,setTimeout:f=>f(),addPage:p=>page=p,NamedPage:class{constructor(name,run){this.name=name;this.run=run;}}});page.run();
+ const problemConfigSchema={properties:{}};
+ vm.runInNewContext(src,{window:{UiContext:{rmjConfig:{type:type==='rmj'?'remoteJudge':type,enabled:type==='rmj',target,problemId}}},document,problemConfigSchema,parseCFProblem,cfUrl,setTimeout:f=>f(),addPage:p=>page=p,NamedPage:class{constructor(name,run){this.name=name;this.run=run;}}});page.run();
+ assert.equal(Array.from(problemConfigSchema.properties.rmj.required).join(','),'enabled,platform,target');
  return {page,sidebarPanel,mainPanels,editor,controls};
 }
 test('RMJ fields are integrated into the main evaluation configuration',()=>{
