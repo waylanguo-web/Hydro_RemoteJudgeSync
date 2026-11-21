@@ -33,13 +33,15 @@ test('Hydro RMJ creates native records without local tasks, guards binding/CSRF/
  assert.equal(detailPage.response.body.page_name,'problem_detail');
  const missing={pdoc:{config:{type:'default'},data:[]},args:{},UiContext:{}};
  await hooks['handler/after/ProblemDetail#get'](missing);assert.equal(missing.UiContext.rmjHybrid,undefined);
- const configPage={pdoc,args:{},session:{},UiContext:{},response:{template:'problem_config.html'},url:()=>'/p/9/rmj'};
+ const configPage={pdoc,args:{},session:{},UiContext:{},response:{template:'problem_config.html',body:{config:'type: default'}},url:()=>'/p/9/rmj'};
  await hooks['handler/after/ProblemConfig#get'](configPage);
  assert.equal(configPage.response.template,'problem_config.html');
  assert.equal(configPage.UiContext.rmjConfig.target,'4:A');
  assert.ok(configPage.UiContext.rmjConfig.csrf);
  const make=()=>({pdoc,user:{_id:7},args:{domainId:'system',csrf:'token'},session:{rmjCsrf:'token'},response:{},limitRate:async()=>{},url:()=>'/record/rid'});
  const submit=hooks['handler/before/ProblemSubmit#post'];
+ const selftest=make();selftest.args={...selftest.args,lang:'cc',code:'int main(){}',pretest:true,input:['1']};
+ assert.equal(await submit(selftest),undefined);assert.equal(records.length,0);
  codeforcesApi.acceptance=async()=>({id:123,creationTimeSeconds:1000});
  assert.equal(await submit(make()),'after');assert.equal(records[0][5],false);assert.equal(ends[0][2].status,1);assert.equal(ends[0][2].score,100);assert.match(records[0][4],/remote AC verification/);
  codeforcesApi.acceptance=async()=>undefined;await submit(make());assert.equal(ends[1][2].score,0);
