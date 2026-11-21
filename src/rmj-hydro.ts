@@ -133,9 +133,10 @@ export async function installRmj(ctx: any) {
         if (!isRmj(h)) return;
         rejectContest(h);
         if (h.args.mode !== 'remote' && (h.args.lang || h.args.code || h.request?.files?.file)) {
+            // Hydro validates self-test input, language and supported problem types.
+            if (h.args.pretest) return;
             const reason = await availability(h.pdoc);
             if (reason) throw new Error(reason);
-            if (h.args.pretest) throw new Error('请选择正式递交。');
             return;
         }
         if (!h.args.csrf || h.args.csrf !== h.session.rmjCsrf) throw new Error('请刷新提交页面后重试。');
