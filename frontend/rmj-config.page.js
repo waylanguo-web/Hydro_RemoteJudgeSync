@@ -61,7 +61,7 @@ addPage(new NamedPage('problem_config', async () => {
     let active = false;
     let root;
     const styling = document.createElement('style');
-    styling.textContent = '#rmj-config-form[hidden]{display:none!important}[data-rmj-active] > :not(:first-child):not(#rmj-config-form){display:none!important}[data-rmj-active] [role="tab"][data-active]:not(#rmj-config-tab){border-color:transparent;color:inherit}[data-rmj-active] #rmj-config-tab{border-bottom:2px solid #228be6;color:#228be6}';
+    styling.textContent = '#rmj-config-form[hidden]{display:none!important}[data-rmj-active] #rmj-config-tab{border-bottom:2px solid #228be6;color:#228be6}';
     editor.append(styling);
     function select(value) {
         active = value;
@@ -157,7 +157,7 @@ addPage(new NamedPage('problem_config', async () => {
         }
     }
     mode.addEventListener('change', update);
-    const updatePlatform = () => { target.placeholder = platform.value === 'vjudge' ? 'AtCoder-abc482_a 或 VJudge 题目链接' : 'CF2276A、2276A 或粘贴原题链接'; extract(); };
+    const updatePlatform = () => { target.placeholder = platform.value === 'vjudge' ? 'AtCoder-abc482_a、VJudge 或洛谷题目链接' : 'CF2276A、2276A 或粘贴原题链接'; extract(); };
     platform.addEventListener('change', updatePlatform);
     target.addEventListener('input', () => { target.setCustomValidity(''); preview.style.display = 'none'; });
     target.addEventListener('change', () => extract(true));

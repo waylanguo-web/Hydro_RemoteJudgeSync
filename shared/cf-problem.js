@@ -20,6 +20,12 @@ function parseVJudgeProblem(input) {
     let value = input.trim();
     if (/^https?:/i.test(value)) {
         const u = new URL(value);
+        if (['www.luogu.com.cn', 'luogu.com.cn'].includes(u.hostname)
+            && !u.username && !u.password && !u.port) {
+            const id = u.pathname.match(/^\/problem\/(P[1-9][0-9]*)\/?$/i)?.[1];
+            if (!id) throw new Error('请输入洛谷题目链接，例如 https://www.luogu.com.cn/problem/P17827。');
+            return parseVJudgeProblem(`洛谷-${id.toUpperCase()}`);
+        }
         if (!['http:', 'https:'].includes(u.protocol) || u.hostname !== 'vjudge.net' || u.username || u.password || u.port) throw new Error('请输入 VJudge 官方题目链接。');
         const encoded = u.pathname.match(/^\/problem\/([^/]+)\/?$/)?.[1] || '';
         try { value = decodeURIComponent(encoded); } catch { throw new Error('VJudge 题目链接编码不正确。'); }

@@ -87,6 +87,14 @@ export async function installRmj(ctx: any) {
     ctx.Route('rmj_config', '/p/:pid/rmj', RmjConfigHandler, PRIV.PRIV_USER_PROFILE);
     ctx.on('handler/after/ProblemConfig#get', async (h: any) => {
         await hydrate(h.pdoc);
+        // Native forms reject plugin fields left behind by older migrations.
+        const nativeConfig = yaml.load(h.response.body.config || '{}') || {};
+        if (nativeConfig.rmj || nativeConfig.type === 'rmj' || nativeConfig.type === 'remote_judge') {
+            const localType = nativeConfig.rmj?.localType || 'default';
+            delete nativeConfig.rmj;
+            if (['rmj', 'remote_judge'].includes(nativeConfig.type)) nativeConfig.type = localType;
+            h.response.body.config = yaml.dump(nativeConfig);
+        }
         const type = isRmj(h) ? (h.pdoc.config.type === 'remoteJudge' ? 'remoteJudge' : h.pdoc.config.type) : h.pdoc.config?.type;
         h.UiContext.rmjConfig = {
             type, enabled: !!remoteTarget(h.pdoc), platform: remoteTarget(h.pdoc)?.platform || 'codeforces',
